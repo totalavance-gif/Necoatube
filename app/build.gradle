@@ -15,6 +15,10 @@ android {
         versionName '1.7'
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
         release {
             minifyEnabled false
