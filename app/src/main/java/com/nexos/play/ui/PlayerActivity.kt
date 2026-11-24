@@ -73,7 +73,9 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.video_title).text = startTitle
         sizePlayer()
 
-        upNext = ResultsAdapter { hit -> openVideo(hit.url, hit.title, hit.thumbUrl) }
+        upNext = ResultsAdapter(
+            onPick = { hit -> openVideo(hit.url, hit.title, hit.thumbUrl) }
+        )
         findViewById<RecyclerView>(R.id.up_next_list).apply {
             layoutManager = LinearLayoutManager(this@PlayerActivity)
             adapter = upNext
