@@ -12,6 +12,7 @@ import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.nexos.play.data.Playable
 import com.nexos.play.data.StreamChoice
+import com.nexos.play.data.VideoHit
 import com.nexos.play.net.AppDownloader
 
 /**
@@ -27,6 +28,16 @@ object PlayerHolder {
     var qualityIndex: Int = 0
     val positions = mutableMapOf<String, Long>()
     var onPlayerEvent: ((String) -> Unit)? = null
+    var onEnded: (() -> Unit)? = null
+    var queue: List<VideoHit> = emptyList()
+    var uiActive: Boolean = false
+    private val history = LinkedHashSet<String>()
+
+    /** Siguiente sin reproducir de la cola; si no hay, el primero distinto. */
+    fun nextUp(): VideoHit? {
+        val fresh = queue.firstOrNull { it.url != pageUrl && !history.contains(it.url) }
+        return fresh ?: queue.firstOrNull { it.url != pageUrl }
+    }
 
     private val eventListener = object : Player.Listener {
         override fun onPlayerError(error: PlaybackException) {
@@ -35,6 +46,7 @@ object PlayerHolder {
 
         override fun onPlaybackStateChanged(state: Int) {
             reportState()
+            if (state == Player.STATE_ENDED) onEnded?.invoke()
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -71,6 +83,8 @@ object PlayerHolder {
 
     fun play(choice: StreamChoice, audio: StreamChoice?) {
         val p = player ?: return
+        history.add(pageUrl)
+        while (history.size > 50) history.remove(history.first())
         val factory = ProgressiveMediaSource.Factory(
             DefaultHttpDataSource.Factory().setUserAgent(AppDownloader.USER_AGENT)
         )

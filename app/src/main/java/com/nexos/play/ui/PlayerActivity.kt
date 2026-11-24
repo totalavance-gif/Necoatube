@@ -49,6 +49,7 @@ class PlayerActivity : AppCompatActivity() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var pageUrl: String
     private var boundUrl: String? = null
+    private var resolving: String? = null
     private lateinit var upNext: ResultsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -115,13 +116,30 @@ class PlayerActivity : AppCompatActivity() {
                 Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
             }
         }
+        PlayerHolder.onEnded = { advance() }
+        PlayerHolder.uiActive = true
         findViewById<PlayerView>(R.id.player_view).player = PlayerHolder.player
         val loaded = PlayerHolder.playable
         if (loaded != null && PlayerHolder.pageUrl == pageUrl) {
             bindInfo(loaded)
+        } else if (loaded != null && boundUrl != null) {
+            pageUrl = PlayerHolder.pageUrl
+            bindInfo(loaded)
         } else if (boundUrl == null) {
             resolve()
         }
+    }
+
+    private fun advance() {
+        if (resolving != null) return
+        val next = PlayerHolder.nextUp() ?: return
+        Toast.makeText(this, next.title, Toast.LENGTH_SHORT).show()
+        openVideo(next.url, next.title)
+    }
+
+    private fun prefetchNext() {
+        val next = PlayerHolder.nextUp() ?: return
+        scope.launch { runCatching { YouTubeRepo.resolve(next.url) } }
     }
 
     override fun onResume() {
@@ -134,6 +152,8 @@ class PlayerActivity : AppCompatActivity() {
     override fun onStop() {
         PlayerHolder.savePosition()
         PlayerHolder.onPlayerEvent = null
+        PlayerHolder.onEnded = null
+        PlayerHolder.uiActive = false
         findViewById<PlayerView>(R.id.player_view).player = null
         super.onStop()
     }
@@ -150,6 +170,7 @@ class PlayerActivity : AppCompatActivity() {
         progress.visibility = View.VISIBLE
         status.text = getString(R.string.status_loading)
         val want = pageUrl
+        resolving = want
         scope.launch {
             try {
                 val p = YouTubeRepo.resolve(want)
@@ -161,6 +182,7 @@ class PlayerActivity : AppCompatActivity() {
                 status.text = "Streams: ${p.video?.label ?: "-"} + " +
                     "${p.audio?.label ?: "-"}"
                 playCurrent()
+                prefetchNext()
             } catch (e: Exception) {
                 if (want == pageUrl) {
                     status.text = getString(
@@ -168,6 +190,7 @@ class PlayerActivity : AppCompatActivity() {
                     )
                 }
             } finally {
+                if (resolving == want) resolving = null
                 if (want == pageUrl) progress.visibility = View.GONE
             }
         }
@@ -183,6 +206,7 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.channel_meta).text = metaLine(p)
         findViewById<TextView>(R.id.video_desc).text = p.description.ifBlank { "—" }
         upNext.submit(p.related)
+        PlayerHolder.queue = p.related
         updateQualityButton()
         findViewById<MaterialButton>(R.id.btn_audio).text =
             getString(if (PlayerHolder.audioOnly) R.string.audio_on else R.string.audio_off)

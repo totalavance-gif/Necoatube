@@ -14,7 +14,13 @@ import androidx.core.app.NotificationCompat
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.nexos.play.R
+import com.nexos.play.data.YouTubeRepo
 import com.nexos.play.ui.PlayerActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 /** Servicio en primer plano: mantiene el audio con la app minimizada. */
 class PlaybackService : Service() {
@@ -37,6 +43,7 @@ class PlaybackService : Service() {
     }
 
     private var watched: ExoPlayer? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val listener = object : Player.Listener {
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             showNotification()
@@ -44,6 +51,30 @@ class PlaybackService : Service() {
 
         override fun onPlaybackStateChanged(state: Int) {
             showNotification()
+            if (state == Player.STATE_ENDED && !PlayerHolder.uiActive) advanceHeadless()
+        }
+    }
+
+    private fun advanceHeadless() {
+        val next = PlayerHolder.nextUp() ?: return
+        scope.launch {
+            runCatching {
+                val p = YouTubeRepo.resolve(next.url)
+                PlayerHolder.playable = p
+                PlayerHolder.pageUrl = next.url
+                PlayerHolder.qualityIndex = 0
+                PlayerHolder.queue = p.related
+                val choice = if (PlayerHolder.audioOnly) p.audio
+                else p.videoOptions.firstOrNull() ?: p.video
+                if (choice != null) {
+                    PlayerHolder.ensure(this@PlaybackService)
+                    PlayerHolder.play(choice, p.audio)
+                    showNotification()
+                    PlayerHolder.nextUp()?.let { following ->
+                        launch { runCatching { YouTubeRepo.resolve(following.url) } }
+                    }
+                }
+            }
         }
     }
 
@@ -64,7 +95,10 @@ class PlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PLAY -> PlayerHolder.player?.playWhenReady = true
+            ACTION_PLAY -> PlayerHolder.player?.let {
+                if (it.playbackState == Player.STATE_ENDED) it.seekTo(0)
+                it.playWhenReady = true
+            }
             ACTION_PAUSE -> PlayerHolder.player?.playWhenReady = false
             ACTION_CLOSE -> {
                 PlayerHolder.reset()
@@ -87,6 +121,7 @@ class PlaybackService : Service() {
     }
 
     override fun onDestroy() {
+        scope.cancel()
         watched?.removeListener(listener)
         watched = null
         super.onDestroy()
