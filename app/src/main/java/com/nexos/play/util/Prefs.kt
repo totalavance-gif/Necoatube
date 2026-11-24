@@ -9,6 +9,7 @@ object Prefs {
     private const val KEY_DARK = "dark_mode"
     private const val KEY_SPEED = "speed"
     private const val KEY_POSITIONS = "positions"
+    private const val KEY_UPDATE_CHECK = "update_check"
 
     fun backendUrl(ctx: Context): String =
         ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -70,5 +71,14 @@ object Prefs {
         map.toList().takeLast(100).forEach { (k, v) -> o.put(k, v) }
         ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit().putString(KEY_POSITIONS, o.toString()).apply()
+    }
+
+    /** true si toca revisar update (máx. 1 vez al día); marca la revisión. */
+    fun dueUpdateCheck(ctx: Context): Boolean {
+        val prefs = ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        val last = prefs.getLong(KEY_UPDATE_CHECK, 0)
+        if (System.currentTimeMillis() - last < 24 * 3600_000L) return false
+        prefs.edit().putLong(KEY_UPDATE_CHECK, System.currentTimeMillis()).apply()
+        return true
     }
 }

@@ -3,6 +3,13 @@
 App Android (Kotlin) + servidor opcional (Python): busca y reproduce YouTube sin
 cuenta y sin anuncios, descarga video/audio en el equipo o vía servidor propio.
 
+## Funciones (v1.7)
+
+- Si el video falla, reproduce el audio solo automáticamente.
+- Aviso en la app cuando hay nueva versión (máx. 1 vez al día).
+- Monitoreo: CI semanal revisa versión del extractor y resuelve
+  un video real; si algo rompe, abre un issue solo.
+
 ## Funciones (v1.6)
 
 - Inicio con tendencias, secciones (historial, favoritos, listas).

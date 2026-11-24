@@ -68,7 +68,7 @@ class PlaybackService : Service() {
                 PlayerHolder.qualityIndex = 0
                 PlayerHolder.queue = p.related
                 val choice = if (PlayerHolder.audioOnly) p.audio
-                else p.videoOptions.firstOrNull() ?: p.video
+                else p.videoOptions.firstOrNull() ?: p.video ?: p.audio
                 if (choice != null) {
                     PlayerHolder.ensure(this@PlaybackService)
                     PlayerHolder.play(choice, p.audio)

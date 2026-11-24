@@ -85,9 +85,24 @@ object PlayerHolder {
         sleepMinutes = 0
     }
 
+    private var lastChoice: StreamChoice? = null
+    private var lastAudio: StreamChoice? = null
+    private var fellBack = false
+
+    private fun audioFallbackText(): String =
+        appCtx?.getString(com.nexos.play.R.string.audio_fallback)
+            ?: "Video no disponible, reproduciendo audio"
+
     private val eventListener = object : Player.Listener {
         override fun onPlayerError(error: PlaybackException) {
-            onPlayerEvent?.invoke("Error ${error.errorCodeName}: ${error.message}")
+            val fb = lastAudio
+            if (!fellBack && fb != null && lastChoice !== fb) {
+                play(fb, null)
+                fellBack = true
+                onPlayerEvent?.invoke(audioFallbackText())
+            } else {
+                onPlayerEvent?.invoke("Error ${error.errorCodeName}: ${error.message}")
+            }
         }
 
         override fun onPlaybackStateChanged(state: Int) {
@@ -161,6 +176,9 @@ object PlayerHolder {
 
     fun play(choice: StreamChoice, audio: StreamChoice?) {
         val p = player ?: return
+        lastChoice = choice
+        lastAudio = audio
+        fellBack = false
         history.add(pageUrl)
         while (history.size > 50) history.remove(history.first())
         val factory = ProgressiveMediaSource.Factory(

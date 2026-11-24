@@ -19,11 +19,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.nexos.play.BuildConfig
 import com.nexos.play.R
 import com.nexos.play.data.Favorites
 import com.nexos.play.data.History
 import com.nexos.play.data.HitJson
 import com.nexos.play.data.Playlists
+import com.nexos.play.data.UpdateInfo
+import com.nexos.play.data.Updater
 import com.nexos.play.data.YouTubeRepo
 import com.nexos.play.util.Prefs
 import kotlinx.coroutines.CoroutineScope
@@ -127,6 +130,24 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         if (!searched) showSection(section)
+        if (Prefs.dueUpdateCheck(this)) {
+            scope.launch {
+                val info = runCatching { Updater.check(BuildConfig.VERSION_NAME) }
+                    .getOrNull()
+                if (info != null) showUpdateDialog(info)
+            }
+        }
+    }
+
+    private fun showUpdateDialog(info: UpdateInfo) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.update_title)
+            .setMessage(getString(R.string.update_msg, info.tag, BuildConfig.VERSION_NAME))
+            .setPositiveButton(R.string.update_go) { _, _ ->
+                startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(info.url)))
+            }
+            .setNegativeButton(R.string.update_later, null)
+            .show()
     }
 
     private fun showSection(n: Int) {

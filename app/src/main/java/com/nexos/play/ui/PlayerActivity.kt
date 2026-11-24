@@ -260,13 +260,21 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun playCurrent() {
         val p = PlayerHolder.playable ?: return
-        val choice = if (PlayerHolder.audioOnly) p.audio else currentVideo(p)
+        var choice = if (PlayerHolder.audioOnly) p.audio else currentVideo(p)
+        var autoAudio = false
+        if (choice == null && !PlayerHolder.audioOnly && p.audio != null) {
+            choice = p.audio
+            autoAudio = true
+        }
         if (choice == null) {
             Toast.makeText(this, R.string.toast_no_streams, Toast.LENGTH_LONG).show()
             return
         }
         PlayerHolder.ensure(this)
         PlayerHolder.play(choice, p.audio)
+        if (autoAudio) {
+            Toast.makeText(this, R.string.audio_fallback, Toast.LENGTH_LONG).show()
+        }
         PlaybackService.start(this)
         History.record(
             this,
