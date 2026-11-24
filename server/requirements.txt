@@ -1,0 +1,2 @@
+# Sin pin a propósito: YouTube rompe versiones viejas de yt-dlp; usar siempre la última.
+yt-dlp

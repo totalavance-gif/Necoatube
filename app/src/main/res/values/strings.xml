@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NexosPlay</string>
+    <string name="search_hint">Buscar en YouTube… (o pega una URL)</string>
+    <string name="search_go">Buscar</string>
+    <string name="status_ready">Escribe y pulsa Buscar. Sin cuenta, sin anuncios.</string>
+    <string name="status_searching">Buscando…</string>
+    <string name="status_empty">Sin resultados.</string>
+    <string name="status_error">Error: %1$s</string>
+    <string name="status_loading">Cargando streams…</string>
+    <string name="results_count">%1$d resultados</string>
+    <string name="btn_download_video">Descargar video</string>
+    <string name="btn_download_audio">Descargar audio</string>
+    <string name="audio_on">Solo audio: ON</string>
+    <string name="audio_off">Solo audio: OFF</string>
+    <string name="btn_backend">Vía servidor yt-dlp</string>
+    <string name="backend_title">Servidor yt-dlp</string>
+    <string name="backend_hint">http://IP:8765 (vacío = solo app)</string>
+    <string name="backend_save">Guardar</string>
+    <string name="backend_saved">Servidor guardado</string>
+    <string name="menu_server">Servidor yt-dlp</string>
+    <string name="toast_no_backend">Configura el servidor en el menú ⋮</string>
+    <string name="toast_download_started">Descarga iniciada</string>
+    <string name="toast_no_streams">Sin stream directo; prueba vía servidor</string>
+    <string name="views">vistas</string>
+    <string name="unknown_uploader">Desconocido</string>
+    <string name="thumb_desc">Miniatura del video</string>
+</resources>

@@ -1,0 +1,16 @@
+# Gradle
+.gradle/
+build/
+# Config local (ruta del SDK, claves): no se versiona
+local.properties
+# Android Studio
+.idea/
+*.iml
+# APKs compilados en local
+*.apk
+# Backend Python
+server/.venv/
+__pycache__/
+*.pyc
+# OS
+.DS_Store
