@@ -67,15 +67,11 @@ class PlaybackService : Service() {
                 PlayerHolder.pageUrl = next.url
                 PlayerHolder.qualityIndex = 0
                 PlayerHolder.queue = p.related
-                val choice = if (PlayerHolder.audioOnly) p.audio
-                else p.videoOptions.firstOrNull() ?: p.video ?: p.audio
-                if (choice != null) {
-                    PlayerHolder.ensure(this@PlaybackService)
-                    PlayerHolder.play(choice, p.audio)
-                    showNotification()
-                    PlayerHolder.nextUp()?.let { following ->
-                        launch { runCatching { YouTubeRepo.resolve(following.url) } }
-                    }
+                PlayerHolder.ensure(this@PlaybackService)
+                PlayerHolder.playMedia(p, PlayerHolder.audioOnly, 0)
+                showNotification()
+                PlayerHolder.nextUp()?.let { following ->
+                    launch { runCatching { YouTubeRepo.resolve(following.url) } }
                 }
             }
         }

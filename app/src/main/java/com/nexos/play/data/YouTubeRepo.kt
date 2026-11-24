@@ -37,6 +37,7 @@ data class Playable(
     val video: StreamChoice?,
     val audio: StreamChoice?,
     val videoOptions: List<StreamChoice> = emptyList(),
+    val audioOptions: List<StreamChoice> = emptyList(),
     val description: String = "",
     val views: Long = -1,
     val uploadDate: String = "",
@@ -80,9 +81,11 @@ object YouTubeRepo {
         }
     }
 
-    suspend fun resolve(pageUrl: String): Playable {
-        cache[pageUrl]?.let {
-            if (System.currentTimeMillis() - it.at < CACHE_TTL_MS) return it.playable
+    suspend fun resolve(pageUrl: String, fresh: Boolean = false): Playable {
+        if (!fresh) {
+            cache[pageUrl]?.let {
+                if (System.currentTimeMillis() - it.at < CACHE_TTL_MS) return it.playable
+            }
         }
         val playable = withContext(Dispatchers.IO) {
             retryIO {
@@ -92,12 +95,14 @@ object YouTubeRepo {
                 val options = muxed.ifEmpty {
                     videoOnlyOptions(info.videoOnlyStreams.orEmpty())
                 }
+                val audios = audioOptions(info.audioStreams.orEmpty())
                 Playable(
                     title = info.name,
                     uploader = info.uploaderName ?: "",
                     video = options.firstOrNull(),
-                    audio = bestAudio(info.audioStreams.orEmpty()),
+                    audio = audios.firstOrNull(),
                     videoOptions = options,
+                    audioOptions = audios,
                     description = info.description?.content().orEmpty(),
                     views = info.viewCount,
                     uploadDate = info.textualUploadDate.orEmpty(),
@@ -144,12 +149,12 @@ object YouTubeRepo {
             .map { StreamChoice(it.content, it.resolution, it.format?.suffix ?: "mp4", true) }
     }
 
-    /** Mejor audio progresivo por bitrate. */
-    private fun bestAudio(streams: List<AudioStream>): StreamChoice? {
+    /** Audios progresivos por bitrate, de mayor a menor. */
+    private fun audioOptions(streams: List<AudioStream>): List<StreamChoice> {
         return streams
             .filter { it.isUrl && it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP }
-            .maxByOrNull { maxOf(it.averageBitrate, 0) }
-            ?.let {
+            .sortedByDescending { maxOf(it.averageBitrate, 0) }
+            .map {
                 val kbps = if (it.averageBitrate > 0) "${it.averageBitrate / 1000}k" else "audio"
                 StreamChoice(it.content, kbps, it.format?.suffix ?: "m4a")
             }

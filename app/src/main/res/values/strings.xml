@@ -23,6 +23,8 @@
     <string name="toast_download_started">Descarga iniciada</string>
     <string name="toast_no_streams">Sin stream directo; prueba vía servidor</string>
     <string name="audio_fallback">Video no disponible, reproduciendo audio</string>
+    <string name="retrying">Reintentando…</string>
+    <string name="via_server_play">Reproduciendo vía servidor</string>
     <string name="update_title">Nueva versión</string>
     <string name="update_msg">Disponible %1$s (tienes %2$s)</string>
     <string name="update_go">Descargar</string>

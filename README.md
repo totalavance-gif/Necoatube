@@ -3,6 +3,12 @@
 App Android (Kotlin) + servidor opcional (Python): busca y reproduce YouTube sin
 cuenta y sin anuncios, descarga video/audio en el equipo o vía servidor propio.
 
+## Funciones (v1.8)
+
+- Escalera de fallos: si un stream falla prueba otra calidad, luego
+  otro audio, re-resuelve fresco, usa tu servidor yt-dlp y solo al
+  final muestra el error (con el código HTTP cuando hay).
+
 ## Funciones (v1.7)
 
 - Si el video falla, reproduce el audio solo automáticamente.
