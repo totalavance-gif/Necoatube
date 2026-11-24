@@ -51,12 +51,14 @@ Vacío = solo motor interno.
 
 - Kotlin, minSdk 24, AGP 8.5.2, Gradle 8.9, JDK 17.
 - El APK se compila en GitHub Actions (este equipo es aarch64 y los
-  build-tools son x86_64): push a `main` → artefacto `app-debug`.
-- Push inicial: crea el repo vacío `NexosPlay` en GitHub, luego:
+  build-tools son x86_64): push a `main` → artefacto `app-debug`;
+  tag `v*` → Release pública con el APK.
+- Remoto: `git@github.com:totalavance-gif/Necoatube.git` (rama `main`).
 
 ```sh
-git remote add origin git@github.com:totalavance-gif/NexosPlay.git
-git push -u origin main
+git push origin main
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
 ## Roadmap
