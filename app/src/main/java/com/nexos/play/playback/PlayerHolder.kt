@@ -137,14 +137,20 @@ object PlayerHolder {
     }
 
     private fun updateSession() {
-        val p = playable
-        session?.setMetadata(
-            MediaMetadata.Builder()
-                .setTitle(p?.title.orEmpty())
-                .setArtist(p?.uploader.orEmpty())
-                .build()
-        )
         session?.setSessionActivity(openIntent())
+    }
+
+    private fun mediaItem(url: String): MediaItem {
+        val p = playable
+        return MediaItem.Builder()
+            .setUri(url)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(p?.title.orEmpty())
+                    .setArtist(p?.uploader.orEmpty())
+                    .build()
+            )
+            .build()
     }
 
     fun play(choice: StreamChoice, audio: StreamChoice?) {
@@ -157,12 +163,12 @@ object PlayerHolder {
         if (choice.videoOnly && audio != null) {
             p.setMediaSource(
                 MergingMediaSource(
-                    factory.createMediaSource(MediaItem.fromUri(choice.url)),
-                    factory.createMediaSource(MediaItem.fromUri(audio.url))
+                    factory.createMediaSource(mediaItem(choice.url)),
+                    factory.createMediaSource(mediaItem(audio.url))
                 )
             )
         } else {
-            p.setMediaSource(factory.createMediaSource(MediaItem.fromUri(choice.url)))
+            p.setMediaSource(factory.createMediaSource(mediaItem(choice.url)))
         }
         p.seekTo(positions[pageUrl] ?: 0L)
         p.prepare()
