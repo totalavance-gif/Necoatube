@@ -23,7 +23,12 @@ data class VideoHit(
     val thumbUrl: String?
 )
 
-data class StreamChoice(val url: String, val label: String, val ext: String)
+data class StreamChoice(
+    val url: String,
+    val label: String,
+    val ext: String,
+    val videoOnly: Boolean = false
+)
 
 data class Playable(
     val title: String,
@@ -63,7 +68,10 @@ object YouTubeRepo {
             retryIO {
                 val service = NewPipe.getService("YouTube")
                 val info = StreamInfo.getInfo(service, pageUrl)
-                val options = muxedOptions(info.videoStreams.orEmpty())
+                val muxed = muxedOptions(info.videoStreams.orEmpty())
+                val options = muxed.ifEmpty {
+                    videoOnlyOptions(info.videoOnlyStreams.orEmpty())
+                }
                 Playable(
                     title = info.name,
                     uploader = info.uploaderName ?: "",
@@ -106,6 +114,14 @@ object YouTubeRepo {
             }
             .sortedByDescending { maxOf(it.height, 0) }
             .map { StreamChoice(it.content, it.resolution, it.format?.suffix ?: "mp4") }
+    }
+
+    /** Video sin audio (se combina con audio al reproducir), de mayor a menor altura. */
+    private fun videoOnlyOptions(streams: List<VideoStream>): List<StreamChoice> {
+        return streams
+            .filter { it.isUrl && it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP }
+            .sortedByDescending { maxOf(it.height, 0) }
+            .map { StreamChoice(it.content, it.resolution, it.format?.suffix ?: "mp4", true) }
     }
 
     /** Mejor audio progresivo por bitrate. */

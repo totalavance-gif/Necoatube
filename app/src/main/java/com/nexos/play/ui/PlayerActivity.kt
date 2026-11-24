@@ -11,8 +11,11 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.MergingMediaSource
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,6 +25,7 @@ import com.nexos.play.data.BackendClient
 import com.nexos.play.data.Playable
 import com.nexos.play.data.StreamChoice
 import com.nexos.play.data.YouTubeRepo
+import com.nexos.play.net.AppDownloader
 import com.nexos.play.util.Downloads
 import com.nexos.play.util.Prefs
 import kotlinx.coroutines.CoroutineScope
@@ -175,7 +179,7 @@ class PlayerActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.toast_no_streams, Toast.LENGTH_LONG).show()
             return
         }
-        switchStream(choice)
+        switchStream(choice, p.audio)
         findViewById<MaterialButton>(R.id.btn_audio).text =
             getString(if (audioOnly) R.string.audio_on else R.string.audio_off)
     }
@@ -183,10 +187,25 @@ class PlayerActivity : AppCompatActivity() {
     private fun currentVideo(p: Playable): StreamChoice? =
         p.videoOptions.getOrNull(qualityIndex) ?: p.video
 
-    private fun switchStream(choice: StreamChoice) {
+    private fun progressiveFactory() =
+        ProgressiveMediaSource.Factory(
+            DefaultHttpDataSource.Factory().setUserAgent(AppDownloader.USER_AGENT)
+        )
+
+    private fun switchStream(choice: StreamChoice, audio: StreamChoice?) {
         ensurePlayer()
         player?.run {
-            setMediaItem(MediaItem.fromUri(choice.url))
+            if (choice.videoOnly && audio != null) {
+                val video = progressiveFactory()
+                    .createMediaSource(MediaItem.fromUri(choice.url))
+                val sound = progressiveFactory()
+                    .createMediaSource(MediaItem.fromUri(audio.url))
+                setMediaSource(MergingMediaSource(video, sound))
+            } else {
+                setMediaSource(
+                    progressiveFactory().createMediaSource(MediaItem.fromUri(choice.url))
+                )
+            }
             seekTo(positions[pageUrl] ?: 0L)
             prepare()
             playWhenReady = true
@@ -258,6 +277,14 @@ class PlayerActivity : AppCompatActivity() {
         val choice = if (video) p?.let { currentVideo(it) } else p?.audio
         if (p == null || choice == null) {
             Toast.makeText(this, R.string.toast_no_streams, Toast.LENGTH_LONG).show()
+            return
+        }
+        if (video && choice.videoOnly) {
+            Downloads.enqueue(this, choice.url, Downloads.fileName(p.title, choice.label, choice.ext))
+            p.audio?.let { a ->
+                Downloads.enqueue(this, a.url, Downloads.fileName(p.title, a.label, a.ext))
+            }
+            Toast.makeText(this, R.string.toast_video_audio_separate, Toast.LENGTH_LONG).show()
             return
         }
         val name = Downloads.fileName(p.title, choice.label, choice.ext)
