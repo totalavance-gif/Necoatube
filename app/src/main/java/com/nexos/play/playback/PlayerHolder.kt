@@ -39,6 +39,7 @@ object PlayerHolder {
     var queue: List<VideoHit> = emptyList()
     var uiActive: Boolean = false
     var shuffle: Boolean = false
+    var speed: Float = 1f
     var currentThumb: String? = null
     var sleepMinutes: Int = 0
         private set
@@ -47,6 +48,10 @@ object PlayerHolder {
     private var appCtx: Context? = null
     private val sleepHandler = Handler(Looper.getMainLooper())
     private var sleepRunnable: Runnable? = null
+
+    fun removeFromQueue(url: String) {
+        queue = queue.filter { it.url != url }
+    }
 
     /** Siguiente de la cola (en orden o al azar), evitando repetidos. */
     fun nextUp(): VideoHit? {
@@ -120,6 +125,7 @@ object PlayerHolder {
             .build()
         created.addListener(eventListener)
         player = created
+        loadPositions()
         session = MediaSession.Builder(ctx.applicationContext, created)
             .setSessionActivity(openIntent())
             .build()
@@ -171,13 +177,29 @@ object PlayerHolder {
             p.setMediaSource(factory.createMediaSource(mediaItem(choice.url)))
         }
         p.seekTo(positions[pageUrl] ?: 0L)
+        p.setPlaybackSpeed(speed)
         p.prepare()
         p.playWhenReady = true
         updateSession()
     }
 
     fun savePosition() {
-        player?.let { if (it.currentPosition > 0) positions[pageUrl] = it.currentPosition }
+        player?.let {
+            if (it.currentPosition > 0) {
+                positions[pageUrl] = it.currentPosition
+                appCtx?.let { ctx ->
+                    com.nexos.play.util.Prefs.savePositions(ctx, positions)
+                }
+            }
+        }
+    }
+
+    fun loadPositions() {
+        appCtx?.let {
+            if (positions.isEmpty()) {
+                positions.putAll(com.nexos.play.util.Prefs.positions(it))
+            }
+        }
     }
 
     fun reset() {

@@ -5,6 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.schabi.newpipe.extractor.InfoItem
 import org.schabi.newpipe.extractor.NewPipe
+import org.schabi.newpipe.extractor.kiosk.KioskInfo
 import org.schabi.newpipe.extractor.search.SearchInfo
 import org.schabi.newpipe.extractor.stream.AudioStream
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
@@ -51,6 +52,25 @@ object YouTubeRepo {
     private data class Cached(val at: Long, val playable: Playable)
 
     private val cache = ConcurrentHashMap<String, Cached>()
+
+    @Volatile private var feedCache: List<VideoHit>? = null
+
+    /** Tendencias para el inicio (con caché de sesión; si falla, búsqueda). */
+    suspend fun trending(): List<VideoHit> {
+        feedCache?.let { return it }
+        val hits = runCatching {
+            withContext(Dispatchers.IO) {
+                retryIO {
+                    val service = NewPipe.getService("YouTube")
+                    val info = KioskInfo.getInfo(service.kioskList.defaultKioskExtractor)
+                    mapHits(info.relatedItems)
+                }
+            }
+        }.getOrNull().orEmpty()
+        val result = if (hits.isNotEmpty()) hits else search("música")
+        feedCache = result
+        return result
+    }
 
     suspend fun search(query: String): List<VideoHit> = withContext(Dispatchers.IO) {
         retryIO {

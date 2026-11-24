@@ -127,6 +127,46 @@
                         android:text="@string/quality_title" />
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_fav"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/fav_off" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_save"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/btn_save" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_lyrics"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/btn_lyrics" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_speed"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="1x" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_queue"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/btn_queue" />
+
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_dl_video"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"

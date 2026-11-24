@@ -2,7 +2,6 @@ package com.nexos.play.data
 
 import android.content.Context
 import org.json.JSONArray
-import org.json.JSONObject
 
 /** Historial local de reproducidos (máx. 50, los recientes primero). */
 object History {
@@ -13,20 +12,7 @@ object History {
     fun record(ctx: Context, hit: VideoHit) {
         val items = list(ctx).filter { it.url != hit.url }.toMutableList()
         items.add(0, hit)
-        val arr = JSONArray()
-        items.take(MAX).forEach {
-            arr.put(
-                JSONObject()
-                    .put("title", it.title)
-                    .put("url", it.url)
-                    .put("uploader", it.uploader)
-                    .put("duration", it.durationSec)
-                    .put("views", it.views)
-                    .put("thumb", it.thumbUrl ?: "")
-            )
-        }
-        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
-            .edit().putString(KEY, arr.toString()).apply()
+        save(ctx, items.take(MAX))
     }
 
     fun list(ctx: Context): List<VideoHit> {
@@ -35,22 +21,28 @@ object History {
         if (raw.isBlank()) return emptyList()
         return runCatching {
             val arr = JSONArray(raw)
-            List(arr.length()) { i ->
-                val o = arr.getJSONObject(i)
-                VideoHit(
-                    title = o.optString("title"),
-                    url = o.optString("url"),
-                    uploader = o.optString("uploader"),
-                    durationSec = o.optLong("duration"),
-                    views = o.optLong("views", -1),
-                    thumbUrl = o.optString("thumb").ifBlank { null }
-                )
-            }.filter { it.url.isNotBlank() }
+            List(arr.length()) { HitJson.fromJson(arr.getJSONObject(it)) }
+                .filter { it.url.isNotBlank() }
         }.getOrDefault(emptyList())
+    }
+
+    fun remove(ctx: Context, url: String) {
+        save(ctx, list(ctx).filter { it.url != url })
     }
 
     fun clear(ctx: Context) {
         ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit().remove(KEY).apply()
+    }
+
+    fun setAll(ctx: Context, items: List<VideoHit>) {
+        save(ctx, items.take(MAX))
+    }
+
+    private fun save(ctx: Context, items: List<VideoHit>) {
+        val arr = JSONArray()
+        items.forEach { arr.put(HitJson.toJson(it)) }
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit().putString(KEY, arr.toString()).apply()
     }
 }

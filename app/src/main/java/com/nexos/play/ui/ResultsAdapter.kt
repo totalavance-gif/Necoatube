@@ -10,8 +10,10 @@ import com.nexos.play.R
 import com.nexos.play.data.VideoHit
 import com.nexos.play.util.Thumbs
 
-class ResultsAdapter(private val onPick: (VideoHit) -> Unit) :
-    RecyclerView.Adapter<ResultsAdapter.Holder>() {
+class ResultsAdapter(
+    private val onPick: (VideoHit) -> Unit,
+    private val onLongPress: ((VideoHit) -> Unit)? = null
+) : RecyclerView.Adapter<ResultsAdapter.Holder>() {
 
     private val items = mutableListOf<VideoHit>()
 
@@ -50,6 +52,11 @@ class ResultsAdapter(private val onPick: (VideoHit) -> Unit) :
             h.badge.visibility = View.GONE
         }
         h.itemView.setOnClickListener { onPick(hit) }
+        if (onLongPress != null) {
+            h.itemView.setOnLongClickListener { onLongPress.invoke(hit); true }
+        } else {
+            h.itemView.setOnLongClickListener(null)
+        }
     }
 
     override fun getItemCount() = items.size

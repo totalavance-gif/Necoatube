@@ -16,6 +16,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.nexos.play.R
 import com.nexos.play.data.YouTubeRepo
 import com.nexos.play.ui.PlayerActivity
+import com.nexos.play.util.Thumbs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +44,8 @@ class PlaybackService : Service() {
     }
 
     private var watched: ExoPlayer? = null
+    private var artUrl: String? = null
+    private var artBitmap: android.graphics.Bitmap? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val listener = object : Player.Listener {
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -146,6 +149,17 @@ class PlaybackService : Service() {
     private fun showNotification() {
         val playable = PlayerHolder.playable
         val playing = PlayerHolder.player?.playWhenReady == true
+        val thumb = PlayerHolder.currentThumb
+        if (thumb != artUrl) {
+            artUrl = thumb
+            artBitmap = null
+            Thumbs.loadBitmap(thumb) { bmp ->
+                if (bmp != null && PlayerHolder.currentThumb == thumb) {
+                    artBitmap = bmp
+                    showNotification()
+                }
+            }
+        }
         val open = PlayerActivity.intent(
             this, PlayerHolder.pageUrl, playable?.title.orEmpty()
         ).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -166,6 +180,7 @@ class PlaybackService : Service() {
         }
         val notif: Notification = NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_media_play)
+            .setLargeIcon(artBitmap)
             .setContentTitle(playable?.title ?: getString(R.string.app_name))
             .setContentText(playable?.uploader ?: "")
             .setContentIntent(content)

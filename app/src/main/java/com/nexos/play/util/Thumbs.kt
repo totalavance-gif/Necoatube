@@ -26,17 +26,32 @@ object Thumbs {
         view.tag = url
         cache.get(url)?.let { view.setImageBitmap(it); return }
         pool.execute {
-            val bmp = runCatching {
-                val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 10_000
-                    readTimeout = 10_000
-                }
-                conn.inputStream.use { BitmapFactory.decodeStream(it) }
-            }.getOrNull()
+            val bmp = fetch(url)
             if (bmp != null) {
                 cache.put(url, bmp)
                 main.post { if (view.tag == url) view.setImageBitmap(bmp) }
             }
         }
     }
+
+    fun loadBitmap(url: String?, done: (Bitmap?) -> Unit) {
+        if (url.isNullOrBlank()) {
+            done(null)
+            return
+        }
+        cache.get(url)?.let { done(it); return }
+        pool.execute {
+            val bmp = fetch(url)
+            if (bmp != null) cache.put(url, bmp)
+            main.post { done(bmp) }
+        }
+    }
+
+    private fun fetch(url: String): Bitmap? = runCatching {
+        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 10_000
+            readTimeout = 10_000
+        }
+        conn.inputStream.use { BitmapFactory.decodeStream(it) }
+    }.getOrNull()
 }

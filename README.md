@@ -3,6 +3,14 @@
 App Android (Kotlin) + servidor opcional (Python): busca y reproduce YouTube sin
 cuenta y sin anuncios, descarga video/audio en el equipo o vía servidor propio.
 
+## Funciones (v1.6)
+
+- Inicio con tendencias, secciones (historial, favoritos, listas).
+- Favoritos, listas de reproducción, cola visible y editable.
+- Velocidad 1x–2x, letra sincronizada, carátula en notificación.
+- Recibir videos compartidos desde otras apps, búsqueda por voz.
+- Reanudar donde quedaste, tema claro/oscuro, respaldo exportable.
+
 ## Funciones (v1.5)
 
 - Aleatorio: el autoplay elige al azar de la cola (se recuerda).

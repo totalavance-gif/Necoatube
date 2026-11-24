@@ -7,8 +7,12 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
+import android.widget.EditText
 import android.widget.ProgressBar
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -19,8 +23,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.nexos.play.R
 import com.nexos.play.data.BackendClient
+import com.nexos.play.data.Favorites
 import com.nexos.play.data.History
+import com.nexos.play.data.Lyrics
 import com.nexos.play.data.Playable
+import com.nexos.play.data.Playlists
 import com.nexos.play.data.VideoHit
 import com.nexos.play.data.StreamChoice
 import com.nexos.play.data.YouTubeRepo
@@ -57,13 +64,13 @@ class PlayerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
-        pageUrl = intent.getStringExtra(EXTRA_URL).orEmpty()
+        val (startUrl, startTitle) = urlFromIntent(intent)
+        pageUrl = startUrl
         if (pageUrl.isBlank() && PlayerHolder.playable == null) {
             finish()
             return
         }
-        findViewById<TextView>(R.id.video_title).text =
-            intent.getStringExtra(EXTRA_TITLE).orEmpty()
+        findViewById<TextView>(R.id.video_title).text = startTitle
         sizePlayer()
 
         upNext = ResultsAdapter { hit -> openVideo(hit.url, hit.title, hit.thumbUrl) }
@@ -74,7 +81,15 @@ class PlayerActivity : AppCompatActivity() {
         }
 
         PlayerHolder.shuffle = Prefs.shuffle(this)
+        PlayerHolder.speed = Prefs.speed(this)
         findViewById<MaterialButton>(R.id.btn_audio).setOnClickListener { toggleAudio() }
+        findViewById<MaterialButton>(R.id.btn_fav).setOnClickListener { toggleFav() }
+        findViewById<MaterialButton>(R.id.btn_save).setOnClickListener { saveToPlaylist() }
+        findViewById<MaterialButton>(R.id.btn_lyrics).setOnClickListener { showLyrics() }
+        findViewById<MaterialButton>(R.id.btn_speed).setOnClickListener { cycleSpeed() }
+        findViewById<MaterialButton>(R.id.btn_queue).setOnClickListener {
+            startActivity(Intent(this, QueueActivity::class.java))
+        }
         findViewById<MaterialButton>(R.id.btn_shuffle).setOnClickListener { toggleShuffle() }
         findViewById<MaterialButton>(R.id.btn_sleep).setOnClickListener { pickSleep() }
         findViewById<MaterialButton>(R.id.btn_quality).setOnClickListener { pickQuality() }
@@ -94,10 +109,22 @@ class PlayerActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        openVideo(
-            intent.getStringExtra(EXTRA_URL).orEmpty(),
-            intent.getStringExtra(EXTRA_TITLE).orEmpty()
-        )
+        val (url, title) = urlFromIntent(intent)
+        openVideo(url, title)
+    }
+
+    private fun urlFromIntent(intent: Intent): Pair<String, String> {
+        var url = intent.getStringExtra(EXTRA_URL).orEmpty()
+        var title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
+        if (intent.action == Intent.ACTION_SEND) {
+            val shared = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
+            val found = Regex("https?://\\S+").find(shared)?.value.orEmpty()
+            if (found.isNotBlank()) {
+                url = found
+                title = found
+            }
+        }
+        return url to title
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -125,6 +152,8 @@ class PlayerActivity : AppCompatActivity() {
         PlayerHolder.uiActive = true
         updateShuffleButton()
         updateSleepButton()
+        updateFavButton()
+        updateSpeedButton()
         findViewById<PlayerView>(R.id.player_view).player = PlayerHolder.player
         val loaded = PlayerHolder.playable
         if (loaded != null && PlayerHolder.pageUrl == pageUrl) {
@@ -215,6 +244,7 @@ class PlayerActivity : AppCompatActivity() {
         upNext.submit(p.related)
         PlayerHolder.queue = p.related
         updateQualityButton()
+        updateFavButton()
         findViewById<MaterialButton>(R.id.btn_audio).text =
             getString(if (PlayerHolder.audioOnly) R.string.audio_on else R.string.audio_off)
     }
@@ -319,6 +349,136 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.btn_quality).text =
             if (label.isNullOrBlank()) getString(R.string.quality_title)
             else getString(R.string.quality_fmt, label)
+    }
+
+    private fun currentHit(): VideoHit? {
+        val p = PlayerHolder.playable ?: return null
+        return VideoHit(p.title, pageUrl, p.uploader, 0, p.views, PlayerHolder.currentThumb)
+    }
+
+    private fun toggleFav() {
+        val hit = currentHit() ?: return
+        val now = Favorites.toggle(this, hit)
+        updateFavButton()
+        Toast.makeText(
+            this, if (now) R.string.fav_added else R.string.fav_removed,
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun updateFavButton() {
+        findViewById<MaterialButton>(R.id.btn_fav).text =
+            getString(if (Favorites.isFav(this, pageUrl)) R.string.fav_on else R.string.fav_off)
+    }
+
+    private fun saveToPlaylist() {
+        val hit = currentHit() ?: return
+        val lists = Playlists.list(this)
+        val names = lists.map { it.name }.toMutableList()
+        names.add(getString(R.string.save_new))
+        AlertDialog.Builder(this)
+            .setTitle(R.string.save_title)
+            .setItems(names.toTypedArray()) { _, i ->
+                if (i < lists.size) {
+                    Playlists.add(this, lists[i].id, hit)
+                    Toast.makeText(
+                        this, getString(R.string.save_done, lists[i].name),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    askNewList(hit)
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun askNewList(hit: VideoHit) {
+        val edit = EditText(this).apply { hint = getString(R.string.newlist_hint) }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.newlist_title)
+            .setView(edit)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val name = edit.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    val created = Playlists.create(this, name)
+                    Playlists.add(this, created.id, hit)
+                    Toast.makeText(
+                        this, getString(R.string.save_done, name), Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun cycleSpeed() {
+        val speeds = floatArrayOf(1f, 1.25f, 1.5f, 1.75f, 2f)
+        val next = speeds.firstOrNull { it > PlayerHolder.speed + 0.001f } ?: speeds[0]
+        PlayerHolder.speed = next
+        Prefs.setSpeed(this, next)
+        PlayerHolder.player?.setPlaybackSpeed(next)
+        updateSpeedButton()
+    }
+
+    private fun updateSpeedButton() {
+        val s = PlayerHolder.speed
+        findViewById<MaterialButton>(R.id.btn_speed).text =
+            if (s == s.toInt().toFloat()) "${s.toInt()}x" else "${s}x"
+    }
+
+    private fun showLyrics() {
+        val p = PlayerHolder.playable ?: return
+        val status = findViewById<TextView>(R.id.status)
+        status.text = getString(R.string.status_loading)
+        scope.launch {
+            val (artist, track) = splitArtistTrack(p)
+            val lines = runCatching { Lyrics.fetch(artist, track) }
+                .getOrDefault(emptyList())
+            status.text = ""
+            if (lines.isEmpty()) {
+                Toast.makeText(
+                    this@PlayerActivity, R.string.lyrics_none, Toast.LENGTH_SHORT
+                ).show()
+                return@launch
+            }
+            val text = TextView(this@PlayerActivity).apply {
+                setText(lines.joinToString("\n") { it.text })
+                setPadding(48, 32, 48, 32)
+                textSize = 15f
+            }
+            val scroll = ScrollView(this@PlayerActivity).apply { addView(text) }
+            val dlg = AlertDialog.Builder(this@PlayerActivity)
+                .setTitle(R.string.lyrics_title)
+                .setView(scroll)
+                .setPositiveButton(android.R.string.ok, null)
+                .create()
+            if (lines.any { it.timeMs >= 0 }) {
+                val h = Handler(Looper.getMainLooper())
+                val tick = object : Runnable {
+                    override fun run() {
+                        if (!dlg.isShowing) return
+                        val pos = PlayerHolder.player?.currentPosition ?: 0L
+                        val idx = lines.indexOfLast { it.timeMs in 0..pos }
+                            .coerceAtLeast(0)
+                        text.post {
+                            val y = text.height * idx / lines.size - scroll.height / 3
+                            scroll.smoothScrollTo(0, y.coerceAtLeast(0))
+                        }
+                        h.postDelayed(this, 1000)
+                    }
+                }
+                h.post(tick)
+                dlg.setOnDismissListener { h.removeCallbacksAndMessages(null) }
+            }
+            dlg.show()
+        }
+    }
+
+    private fun splitArtistTrack(p: Playable): Pair<String, String> {
+        val parts = p.title.split(" - ", limit = 2)
+        return if (parts.size == 2) parts[0].trim() to parts[1].trim()
+        else p.uploader.trim() to p.title.trim()
     }
 
     private fun share() {
