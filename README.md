@@ -3,6 +3,13 @@
 App Android (Kotlin) + servidor opcional (Python): busca y reproduce YouTube sin
 cuenta y sin anuncios, descarga video/audio en el equipo o vía servidor propio.
 
+## Funciones (v1.5)
+
+- Aleatorio: el autoplay elige al azar de la cola (se recuerda).
+- Dormir: temporizador para detener en 15/30/60/90 min.
+- Pantalla bloqueada: título, autor y controles del sistema.
+- Historial local de reproducidos en el inicio (con borrado).
+
 ## Funciones (v1.4)
 
 - Autoplay: al terminar suena la siguiente de “A continuación”, también

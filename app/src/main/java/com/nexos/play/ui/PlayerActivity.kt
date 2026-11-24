@@ -19,7 +19,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.nexos.play.R
 import com.nexos.play.data.BackendClient
+import com.nexos.play.data.History
 import com.nexos.play.data.Playable
+import com.nexos.play.data.VideoHit
 import com.nexos.play.data.StreamChoice
 import com.nexos.play.data.YouTubeRepo
 import com.nexos.play.playback.PlaybackService
@@ -64,14 +66,17 @@ class PlayerActivity : AppCompatActivity() {
             intent.getStringExtra(EXTRA_TITLE).orEmpty()
         sizePlayer()
 
-        upNext = ResultsAdapter { hit -> openVideo(hit.url, hit.title) }
+        upNext = ResultsAdapter { hit -> openVideo(hit.url, hit.title, hit.thumbUrl) }
         findViewById<RecyclerView>(R.id.up_next_list).apply {
             layoutManager = LinearLayoutManager(this@PlayerActivity)
             adapter = upNext
             isNestedScrollingEnabled = false
         }
 
+        PlayerHolder.shuffle = Prefs.shuffle(this)
         findViewById<MaterialButton>(R.id.btn_audio).setOnClickListener { toggleAudio() }
+        findViewById<MaterialButton>(R.id.btn_shuffle).setOnClickListener { toggleShuffle() }
+        findViewById<MaterialButton>(R.id.btn_sleep).setOnClickListener { pickSleep() }
         findViewById<MaterialButton>(R.id.btn_quality).setOnClickListener { pickQuality() }
         findViewById<MaterialButton>(R.id.btn_dl_video).setOnClickListener { download(video = true) }
         findViewById<MaterialButton>(R.id.btn_dl_audio).setOnClickListener { download(video = false) }
@@ -118,6 +123,8 @@ class PlayerActivity : AppCompatActivity() {
         }
         PlayerHolder.onEnded = { advance() }
         PlayerHolder.uiActive = true
+        updateShuffleButton()
+        updateSleepButton()
         findViewById<PlayerView>(R.id.player_view).player = PlayerHolder.player
         val loaded = PlayerHolder.playable
         if (loaded != null && PlayerHolder.pageUrl == pageUrl) {
@@ -229,6 +236,10 @@ class PlayerActivity : AppCompatActivity() {
         PlayerHolder.ensure(this)
         PlayerHolder.play(choice, p.audio)
         PlaybackService.start(this)
+        History.record(
+            this,
+            VideoHit(p.title, pageUrl, p.uploader, 0, p.views, PlayerHolder.currentThumb)
+        )
         findViewById<MaterialButton>(R.id.btn_audio).text =
             getString(if (PlayerHolder.audioOnly) R.string.audio_on else R.string.audio_off)
     }
@@ -240,6 +251,45 @@ class PlayerActivity : AppCompatActivity() {
         PlayerHolder.savePosition()
         PlayerHolder.audioOnly = !PlayerHolder.audioOnly
         playCurrent()
+    }
+
+    private fun toggleShuffle() {
+        PlayerHolder.shuffle = !PlayerHolder.shuffle
+        Prefs.setShuffle(this, PlayerHolder.shuffle)
+        updateShuffleButton()
+    }
+
+    private fun updateShuffleButton() {
+        findViewById<MaterialButton>(R.id.btn_shuffle).text =
+            getString(if (PlayerHolder.shuffle) R.string.shuffle_on else R.string.shuffle_off)
+    }
+
+    private fun updateSleepButton() {
+        val min = PlayerHolder.sleepMinutes
+        findViewById<MaterialButton>(R.id.btn_sleep).text =
+            if (min > 0) getString(R.string.sleep_fmt, min)
+            else getString(R.string.btn_sleep)
+    }
+
+    private fun pickSleep() {
+        val values = intArrayOf(0, 15, 30, 60, 90)
+        val checked = values.indexOf(PlayerHolder.sleepMinutes).takeIf { it >= 0 } ?: 0
+        AlertDialog.Builder(this)
+            .setTitle(R.string.sleep_title)
+            .setSingleChoiceItems(R.array.sleep_options, checked) { d, i ->
+                val min = values[i]
+                if (min > 0) {
+                    PlayerHolder.setSleepTimer(min)
+                    Toast.makeText(this, getString(R.string.sleep_toast, min), Toast.LENGTH_SHORT).show()
+                } else {
+                    PlayerHolder.cancelSleepTimer()
+                    Toast.makeText(this, R.string.sleep_cancelled, Toast.LENGTH_SHORT).show()
+                }
+                updateSleepButton()
+                d.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun pickQuality() {
@@ -279,7 +329,7 @@ class PlayerActivity : AppCompatActivity() {
         startActivity(Intent.createChooser(send, getString(R.string.share_title)))
     }
 
-    private fun openVideo(url: String, title: String) {
+    private fun openVideo(url: String, title: String, thumbUrl: String? = null) {
         if (url.isBlank()) return
         val loaded = PlayerHolder.playable
         if (url == PlayerHolder.pageUrl && loaded != null) {
@@ -287,6 +337,7 @@ class PlayerActivity : AppCompatActivity() {
             bindInfo(loaded)
             return
         }
+        PlayerHolder.currentThumb = thumbUrl
         PlayerHolder.savePosition()
         PlayerHolder.audioOnly = false
         PlayerHolder.qualityIndex = 0

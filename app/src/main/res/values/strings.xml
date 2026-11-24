@@ -40,4 +40,20 @@
     <string name="notif_pause">Pausar</string>
     <string name="notif_close">Cerrar</string>
     <string name="status_stopped">Reproducción detenida</string>
+    <string name="shuffle_on">Aleatorio: ON</string>
+    <string name="shuffle_off">Aleatorio: OFF</string>
+    <string name="btn_sleep">Dormir</string>
+    <string name="sleep_title">Detener reproducción en…</string>
+    <string name="sleep_fmt">Dormir: %1$d</string>
+    <string name="sleep_toast">Se detendrá en %1$d min</string>
+    <string name="sleep_cancelled">Temporizador cancelado</string>
+    <string name="history_title">Historial</string>
+    <string name="history_clear">Borrar</string>
+    <string-array name="sleep_options">
+        <item>Desactivado</item>
+        <item>15 min</item>
+        <item>30 min</item>
+        <item>60 min</item>
+        <item>90 min</item>
+    </string-array>
 </resources>

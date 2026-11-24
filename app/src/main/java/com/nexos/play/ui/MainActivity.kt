@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.nexos.play.R
+import com.nexos.play.data.History
 import com.nexos.play.data.YouTubeRepo
 import com.nexos.play.util.Prefs
 import kotlinx.coroutines.CoroutineScope
@@ -29,6 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var adapter: ResultsAdapter
+    private var searched = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +47,12 @@ class MainActivity : AppCompatActivity() {
         }
         list.layoutManager = LinearLayoutManager(this)
         list.adapter = adapter
-        status.text = getString(R.string.status_ready)
+        showHistory()
+
+        findViewById<TextView>(R.id.history_clear).setOnClickListener {
+            History.clear(this)
+            showHistory()
+        }
 
         findViewById<TextView>(R.id.btn_server).setOnClickListener { askBackend() }
         input.setOnEditorActionListener { _, actionId, _ ->
@@ -64,6 +71,8 @@ class MainActivity : AppCompatActivity() {
                 startActivity(PlayerActivity.intent(this, q, q))
                 return@setOnClickListener
             }
+            searched = true
+            findViewById<View>(R.id.history_header).visibility = View.GONE
             progress.visibility = View.VISIBLE
             status.text = getString(R.string.status_searching)
             scope.launch {
@@ -80,6 +89,26 @@ class MainActivity : AppCompatActivity() {
                     progress.visibility = View.GONE
                 }
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val input = findViewById<EditText>(R.id.search_input)
+        if (input.text.isNullOrBlank()) {
+            searched = false
+            showHistory()
+        }
+    }
+
+    private fun showHistory() {
+        val items = History.list(this)
+        findViewById<View>(R.id.history_header).visibility =
+            if (items.isEmpty() || searched) View.GONE else View.VISIBLE
+        if (!searched) {
+            findViewById<TextView>(R.id.status).text =
+                if (items.isEmpty()) getString(R.string.status_ready) else ""
+            adapter.submit(items)
         }
     }
 

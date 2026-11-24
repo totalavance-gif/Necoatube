@@ -103,6 +103,22 @@
                         android:text="@string/audio_off" />
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_shuffle"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/shuffle_off" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_sleep"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/btn_sleep" />
+
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_quality"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"

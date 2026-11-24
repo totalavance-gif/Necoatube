@@ -1,8 +1,13 @@
 package com.nexos.play.playback
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultHttpDataSource
@@ -10,10 +15,12 @@ import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.session.MediaSession
 import com.nexos.play.data.Playable
 import com.nexos.play.data.StreamChoice
 import com.nexos.play.data.VideoHit
 import com.nexos.play.net.AppDownloader
+import com.nexos.play.ui.PlayerActivity
 
 /**
  * Reproductor único de la app: vive fuera de las activities para que el audio
@@ -31,12 +38,46 @@ object PlayerHolder {
     var onEnded: (() -> Unit)? = null
     var queue: List<VideoHit> = emptyList()
     var uiActive: Boolean = false
+    var shuffle: Boolean = false
+    var currentThumb: String? = null
+    var sleepMinutes: Int = 0
+        private set
     private val history = LinkedHashSet<String>()
+    private var session: MediaSession? = null
+    private var appCtx: Context? = null
+    private val sleepHandler = Handler(Looper.getMainLooper())
+    private var sleepRunnable: Runnable? = null
 
-    /** Siguiente sin reproducir de la cola; si no hay, el primero distinto. */
+    /** Siguiente de la cola (en orden o al azar), evitando repetidos. */
     fun nextUp(): VideoHit? {
-        val fresh = queue.firstOrNull { it.url != pageUrl && !history.contains(it.url) }
-        return fresh ?: queue.firstOrNull { it.url != pageUrl }
+        val others = queue.filter { it.url != pageUrl }
+        if (others.isEmpty()) return null
+        val fresh = others.filter { !history.contains(it.url) }
+        val pool = fresh.ifEmpty { others }
+        return if (shuffle) pool.randomOrNull() else pool.firstOrNull()
+    }
+
+    fun setSleepTimer(min: Int) {
+        cancelSleepTimer()
+        if (min <= 0) return
+        sleepMinutes = min
+        val r = Runnable {
+            sleepMinutes = 0
+            savePosition()
+            player?.playWhenReady = false
+            appCtx?.let {
+                it.stopService(Intent(it, PlaybackService::class.java))
+            }
+            onPlayerEvent?.invoke("Estado: en pausa")
+        }
+        sleepRunnable = r
+        sleepHandler.postDelayed(r, min * 60_000L)
+    }
+
+    fun cancelSleepTimer() {
+        sleepRunnable?.let { sleepHandler.removeCallbacks(it) }
+        sleepRunnable = null
+        sleepMinutes = 0
     }
 
     private val eventListener = object : Player.Listener {
@@ -68,6 +109,7 @@ object PlayerHolder {
 
     fun ensure(ctx: Context): ExoPlayer {
         player?.let { return it }
+        appCtx = ctx.applicationContext
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(15_000, 30_000, 1_500, 3_000)
             .build()
@@ -78,7 +120,31 @@ object PlayerHolder {
             .build()
         created.addListener(eventListener)
         player = created
+        session = MediaSession.Builder(ctx.applicationContext, created)
+            .setSessionActivity(openIntent())
+            .build()
         return created
+    }
+
+    private fun openIntent(): PendingIntent {
+        val ctx = appCtx ?: throw IllegalStateException("holder sin contexto")
+        val open = PlayerActivity.intent(ctx, pageUrl, playable?.title.orEmpty())
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        return PendingIntent.getActivity(
+            ctx, 20, open,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun updateSession() {
+        val p = playable
+        session?.setMetadata(
+            MediaMetadata.Builder()
+                .setTitle(p?.title.orEmpty())
+                .setArtist(p?.uploader.orEmpty())
+                .build()
+        )
+        session?.setSessionActivity(openIntent())
     }
 
     fun play(choice: StreamChoice, audio: StreamChoice?) {
@@ -101,6 +167,7 @@ object PlayerHolder {
         p.seekTo(positions[pageUrl] ?: 0L)
         p.prepare()
         p.playWhenReady = true
+        updateSession()
     }
 
     fun savePosition() {
@@ -108,8 +175,11 @@ object PlayerHolder {
     }
 
     fun reset() {
+        cancelSleepTimer()
         runCatching { player?.stop() }
+        runCatching { session?.release() }
         runCatching { player?.release() }
+        session = null
         player = null
         playable = null
         pageUrl = ""
