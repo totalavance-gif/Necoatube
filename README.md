@@ -3,6 +3,13 @@
 App Android (Kotlin) + servidor opcional (Python): busca y reproduce YouTube sin
 cuenta y sin anuncios, descarga video/audio en el equipo o vía servidor propio.
 
+## Funciones (v1.3)
+
+- Segundo plano: el audio sigue con la app minimizada, con notificación
+  (reproducir/pausar/cerrar). Sin PiP. Se detiene con Cerrar.
+- Arranque más rápido: buffer inicial de 0.8 s y prioridad a tiempo
+  sobre tamaño en conexiones lentas.
+
 ## Funciones (v1.2)
 
 - Reproduce videos aunque YouTube mande video y audio por separado

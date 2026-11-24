@@ -35,4 +35,9 @@
     <string name="views_date">%1$s vistas • %2$s</string>
     <string name="desc_title">Descripción</string>
     <string name="share_title">Compartir video</string>
+    <string name="notif_channel">Reproducción</string>
+    <string name="notif_play">Reproducir</string>
+    <string name="notif_pause">Pausar</string>
+    <string name="notif_close">Cerrar</string>
+    <string name="status_stopped">Reproducción detenida</string>
 </resources>

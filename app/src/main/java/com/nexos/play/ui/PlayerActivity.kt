@@ -1,8 +1,11 @@
 package com.nexos.play.ui
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
@@ -10,12 +13,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.media3.common.MediaItem
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.exoplayer.DefaultLoadControl
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.MergingMediaSource
-import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -25,7 +22,8 @@ import com.nexos.play.data.BackendClient
 import com.nexos.play.data.Playable
 import com.nexos.play.data.StreamChoice
 import com.nexos.play.data.YouTubeRepo
-import com.nexos.play.net.AppDownloader
+import com.nexos.play.playback.PlaybackService
+import com.nexos.play.playback.PlayerHolder
 import com.nexos.play.util.Downloads
 import com.nexos.play.util.Prefs
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +38,7 @@ class PlayerActivity : AppCompatActivity() {
     companion object {
         private const val EXTRA_URL = "url"
         private const val EXTRA_TITLE = "title"
+        private const val REQ_NOTIF = 1001
 
         fun intent(ctx: Context, url: String, title: String) =
             Intent(ctx, PlayerActivity::class.java)
@@ -48,18 +47,18 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private var player: ExoPlayer? = null
-    private var playable: Playable? = null
-    private var audioOnly = false
-    private var qualityIndex = 0
     private lateinit var pageUrl: String
-    private val positions = mutableMapOf<String, Long>()
+    private var boundUrl: String? = null
     private lateinit var upNext: ResultsAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
         pageUrl = intent.getStringExtra(EXTRA_URL).orEmpty()
+        if (pageUrl.isBlank() && PlayerHolder.playable == null) {
+            finish()
+            return
+        }
         findViewById<TextView>(R.id.video_title).text =
             intent.getStringExtra(EXTRA_TITLE).orEmpty()
         sizePlayer()
@@ -77,6 +76,22 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.btn_dl_audio).setOnClickListener { download(video = false) }
         findViewById<MaterialButton>(R.id.btn_share).setOnClickListener { share() }
         findViewById<MaterialButton>(R.id.btn_backend).setOnClickListener { viaBackend() }
+
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIF)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openVideo(
+            intent.getStringExtra(EXTRA_URL).orEmpty(),
+            intent.getStringExtra(EXTRA_TITLE).orEmpty()
+        )
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -93,37 +108,33 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        ensurePlayer()
-        if (playable == null) {
+        PlayerHolder.ensure(this)
+        findViewById<PlayerView>(R.id.player_view).player = PlayerHolder.player
+        val loaded = PlayerHolder.playable
+        if (loaded != null && PlayerHolder.pageUrl == pageUrl) {
+            bindInfo(loaded)
+        } else if (boundUrl == null) {
             resolve()
-        } else if (player?.currentMediaItem == null) {
-            playCurrent()
-        } else {
-            player?.playWhenReady = true
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (boundUrl != null && PlayerHolder.playable == null) {
+            findViewById<TextView>(R.id.status).text = getString(R.string.status_stopped)
         }
     }
 
     override fun onStop() {
-        savePosition()
-        player?.playWhenReady = false
+        PlayerHolder.savePosition()
+        findViewById<PlayerView>(R.id.player_view).player = null
         super.onStop()
     }
 
     override fun onDestroy() {
+        runCatching { findViewById<PlayerView>(R.id.player_view).player = null }
         scope.cancel()
-        player?.release()
-        player = null
         super.onDestroy()
-    }
-
-    private fun ensurePlayer() {
-        if (player == null) {
-            val loadControl = DefaultLoadControl.Builder()
-                .setBufferDurationsMs(15_000, 30_000, 1_500, 3_000)
-                .build()
-            player = ExoPlayer.Builder(this).setLoadControl(loadControl).build()
-        }
-        findViewById<PlayerView>(R.id.player_view).player = player
     }
 
     private fun resolve() {
@@ -136,8 +147,9 @@ class PlayerActivity : AppCompatActivity() {
             try {
                 val p = YouTubeRepo.resolve(want)
                 if (want != pageUrl) return@launch
-                playable = p
-                qualityIndex = 0
+                PlayerHolder.playable = p
+                PlayerHolder.pageUrl = want
+                PlayerHolder.qualityIndex = 0
                 bindInfo(p)
                 playCurrent()
                 status.text = ""
@@ -154,6 +166,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun bindInfo(p: Playable) {
+        boundUrl = PlayerHolder.pageUrl
         findViewById<TextView>(R.id.video_title).text = p.title
         findViewById<TextView>(R.id.channel_name).text =
             p.uploader.ifBlank { getString(R.string.unknown_uploader) }
@@ -163,6 +176,8 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.video_desc).text = p.description.ifBlank { "—" }
         upNext.submit(p.related)
         updateQualityButton()
+        findViewById<MaterialButton>(R.id.btn_audio).text =
+            getString(if (PlayerHolder.audioOnly) R.string.audio_on else R.string.audio_off)
     }
 
     private fun metaLine(p: Playable): String {
@@ -173,66 +188,41 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun playCurrent() {
-        val p = playable ?: return
-        val choice = if (audioOnly) p.audio else currentVideo(p)
+        val p = PlayerHolder.playable ?: return
+        val choice = if (PlayerHolder.audioOnly) p.audio else currentVideo(p)
         if (choice == null) {
             Toast.makeText(this, R.string.toast_no_streams, Toast.LENGTH_LONG).show()
             return
         }
-        switchStream(choice, p.audio)
+        PlayerHolder.ensure(this)
+        PlayerHolder.play(choice, p.audio)
+        PlaybackService.start(this)
         findViewById<MaterialButton>(R.id.btn_audio).text =
-            getString(if (audioOnly) R.string.audio_on else R.string.audio_off)
+            getString(if (PlayerHolder.audioOnly) R.string.audio_on else R.string.audio_off)
     }
 
     private fun currentVideo(p: Playable): StreamChoice? =
-        p.videoOptions.getOrNull(qualityIndex) ?: p.video
-
-    private fun progressiveFactory() =
-        ProgressiveMediaSource.Factory(
-            DefaultHttpDataSource.Factory().setUserAgent(AppDownloader.USER_AGENT)
-        )
-
-    private fun switchStream(choice: StreamChoice, audio: StreamChoice?) {
-        ensurePlayer()
-        player?.run {
-            if (choice.videoOnly && audio != null) {
-                val video = progressiveFactory()
-                    .createMediaSource(MediaItem.fromUri(choice.url))
-                val sound = progressiveFactory()
-                    .createMediaSource(MediaItem.fromUri(audio.url))
-                setMediaSource(MergingMediaSource(video, sound))
-            } else {
-                setMediaSource(
-                    progressiveFactory().createMediaSource(MediaItem.fromUri(choice.url))
-                )
-            }
-            seekTo(positions[pageUrl] ?: 0L)
-            prepare()
-            playWhenReady = true
-        }
-    }
-
-    private fun savePosition() {
-        player?.let { if (it.currentPosition > 0) positions[pageUrl] = it.currentPosition }
-    }
+        p.videoOptions.getOrNull(PlayerHolder.qualityIndex) ?: p.video
 
     private fun toggleAudio() {
-        savePosition()
-        audioOnly = !audioOnly
+        PlayerHolder.savePosition()
+        PlayerHolder.audioOnly = !PlayerHolder.audioOnly
         playCurrent()
     }
 
     private fun pickQuality() {
-        val opts = playable?.videoOptions.orEmpty()
+        val opts = PlayerHolder.playable?.videoOptions.orEmpty()
         if (opts.isEmpty()) {
             Toast.makeText(this, R.string.toast_no_streams, Toast.LENGTH_SHORT).show()
             return
         }
         AlertDialog.Builder(this)
             .setTitle(R.string.quality_title)
-            .setSingleChoiceItems(opts.map { it.label }.toTypedArray(), qualityIndex) { d, i ->
-                savePosition()
-                qualityIndex = i
+            .setSingleChoiceItems(
+                opts.map { it.label }.toTypedArray(), PlayerHolder.qualityIndex
+            ) { d, i ->
+                PlayerHolder.savePosition()
+                PlayerHolder.qualityIndex = i
                 updateQualityButton()
                 playCurrent()
                 d.dismiss()
@@ -242,7 +232,8 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun updateQualityButton() {
-        val label = playable?.videoOptions?.getOrNull(qualityIndex)?.label
+        val label = PlayerHolder.playable?.videoOptions
+            ?.getOrNull(PlayerHolder.qualityIndex)?.label
         findViewById<MaterialButton>(R.id.btn_quality).text =
             if (label.isNullOrBlank()) getString(R.string.quality_title)
             else getString(R.string.quality_fmt, label)
@@ -257,14 +248,19 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun openVideo(url: String, title: String) {
-        savePosition()
-        player?.stop()
-        player?.clearMediaItems()
+        if (url.isBlank()) return
+        val loaded = PlayerHolder.playable
+        if (url == PlayerHolder.pageUrl && loaded != null) {
+            pageUrl = url
+            bindInfo(loaded)
+            return
+        }
+        PlayerHolder.savePosition()
+        PlayerHolder.audioOnly = false
+        PlayerHolder.qualityIndex = 0
         pageUrl = url
-        playable = null
-        audioOnly = false
-        qualityIndex = 0
-        positions.remove(url)
+        PlayerHolder.positions.remove(url)
+        boundUrl = null
         findViewById<TextView>(R.id.video_title).text = title
         findViewById<TextView>(R.id.video_desc).text = ""
         upNext.submit(emptyList())
@@ -273,7 +269,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun download(video: Boolean) {
-        val p = playable
+        val p = PlayerHolder.playable
         val choice = if (video) p?.let { currentVideo(it) } else p?.audio
         if (p == null || choice == null) {
             Toast.makeText(this, R.string.toast_no_streams, Toast.LENGTH_LONG).show()
@@ -304,7 +300,7 @@ class PlayerActivity : AppCompatActivity() {
         scope.launch {
             try {
                 val info = withContext(Dispatchers.IO) { BackendClient.fetchInfo(base, pageUrl) }
-                val pick = (if (audioOnly) info.audio else info.video)
+                val pick = (if (PlayerHolder.audioOnly) info.audio else info.video)
                     ?: info.video ?: info.audio
                 if (pick == null) throw IllegalStateException(getString(R.string.toast_no_streams))
                 val name = Downloads.fileName(
