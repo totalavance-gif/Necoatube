@@ -34,15 +34,15 @@ class ResultsAdapter(private val onPick: (VideoHit) -> Unit) :
     }
 
     override fun onBindViewHolder(h: Holder, position: Int) {
-        val it = items[position]
-        h.title.text = it.title
+        val hit = items[position]
+        h.title.text = hit.title
         h.meta.text = listOf(
-            it.uploader.ifBlank { h.itemView.context.getString(R.string.unknown_uploader) },
-            fmtDuration(it.durationSec),
-            fmtViews(h, it.views)
+            hit.uploader.ifBlank { h.itemView.context.getString(R.string.unknown_uploader) },
+            fmtDuration(hit.durationSec),
+            fmtViews(h, hit.views)
         ).filter { it.isNotEmpty() }.joinToString(" • ")
-        Thumbs.load(it.thumbUrl, h.thumb)
-        h.itemView.setOnClickListener { onPick(it) }
+        Thumbs.load(hit.thumbUrl, h.thumb)
+        h.itemView.setOnClickListener { onPick(hit) }
     }
 
     override fun getItemCount() = items.size

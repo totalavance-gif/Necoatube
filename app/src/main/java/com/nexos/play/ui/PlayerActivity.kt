@@ -127,7 +127,7 @@ class PlayerActivity : AppCompatActivity() {
     private fun download(video: Boolean) {
         val p = playable
         val choice = if (video) p?.video else p?.audio
-        if (choice == null) {
+        if (p == null || choice == null) {
             Toast.makeText(this, R.string.toast_no_streams, Toast.LENGTH_LONG).show()
             return
         }
