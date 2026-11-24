@@ -25,4 +25,13 @@
     <string name="views">vistas</string>
     <string name="unknown_uploader">Desconocido</string>
     <string name="thumb_desc">Miniatura del video</string>
+    <string name="search_desc">Buscar</string>
+    <string name="server_desc">Servidor yt-dlp</string>
+    <string name="quality_title">Calidad</string>
+    <string name="quality_fmt">Calidad: %1$s</string>
+    <string name="btn_share">Compartir</string>
+    <string name="up_next">A continuación</string>
+    <string name="views_date">%1$s vistas • %2$s</string>
+    <string name="desc_title">Descripción</string>
+    <string name="share_title">Compartir video</string>
 </resources>

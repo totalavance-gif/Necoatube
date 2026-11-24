@@ -1,10 +1,14 @@
 package com.nexos.play.ui
 
+import android.content.Context
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -12,7 +16,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.button.MaterialButton
 import com.nexos.play.R
 import com.nexos.play.data.YouTubeRepo
 import com.nexos.play.util.Prefs
@@ -32,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val input = findViewById<EditText>(R.id.search_input)
-        val go = findViewById<MaterialButton>(R.id.search_go)
+        val go = findViewById<ImageButton>(R.id.search_go)
         val progress = findViewById<ProgressBar>(R.id.progress)
         val status = findViewById<TextView>(R.id.status)
         val list = findViewById<RecyclerView>(R.id.results)
@@ -44,9 +47,19 @@ class MainActivity : AppCompatActivity() {
         list.adapter = adapter
         status.text = getString(R.string.status_ready)
 
+        findViewById<TextView>(R.id.btn_server).setOnClickListener { askBackend() }
+        input.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                go.performClick()
+                true
+            } else {
+                false
+            }
+        }
         go.setOnClickListener {
             val q = input.text.toString().trim()
             if (q.isEmpty()) return@setOnClickListener
+            hideKeyboard(input)
             if (q.startsWith("http")) {
                 startActivity(PlayerActivity.intent(this, q, q))
                 return@setOnClickListener
@@ -68,6 +81,11 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun hideKeyboard(view: View) {
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

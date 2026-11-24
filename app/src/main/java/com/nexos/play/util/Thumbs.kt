@@ -14,7 +14,11 @@ import java.util.concurrent.Executors
 object Thumbs {
     private val main = Handler(Looper.getMainLooper())
     private val pool = Executors.newFixedThreadPool(4)
-    private val cache = LruCache<String, Bitmap>(60)
+    private val cache = object : LruCache<String, Bitmap>(
+        (Runtime.getRuntime().maxMemory() / 1024 / 8).toInt()
+    ) {
+        override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount / 1024
+    }
 
     fun load(url: String?, view: ImageView) {
         view.setImageBitmap(null)

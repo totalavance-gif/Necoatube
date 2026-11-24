@@ -3,11 +3,15 @@
 App Android (Kotlin) + servidor opcional (Python): busca y reproduce YouTube sin
 cuenta y sin anuncios, descarga video/audio en el equipo o vía servidor propio.
 
-## Funciones (v1.0)
+## Funciones (v1.1)
 
 - Buscar videos sin cuenta ni API key.
 - Reproducir directo, sin anuncios (streams progresivos, no WebView).
-- Modo solo-audio con un toque.
+- Interfaz oscura estilo YouTube: tarjetas con duración, canal, vistas,
+  descripción y lista de “A continuación”.
+- Selector de calidad, botón de compartir y modo solo-audio con un toque.
+- Arranque rápido: buffer de inicio corto, caché de streams resueltos,
+  sin re-resolver al volver o rotar, y memoria de posición por video.
 - Descargar video/audio con nombre `Titulo_720p.mp4` a Descargas.
 - Motor yt-dlp opcional por HTTP como segunda fuente de descargas.
 - Pegar una URL de YouTube abre el reproductor directo.

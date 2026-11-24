@@ -23,6 +23,7 @@ class ResultsAdapter(private val onPick: (VideoHit) -> Unit) :
 
     class Holder(v: View) : RecyclerView.ViewHolder(v) {
         val thumb: ImageView = v.findViewById(R.id.thumb)
+        val badge: TextView = v.findViewById(R.id.badge_duration)
         val title: TextView = v.findViewById(R.id.title)
         val meta: TextView = v.findViewById(R.id.meta)
     }
@@ -42,6 +43,12 @@ class ResultsAdapter(private val onPick: (VideoHit) -> Unit) :
             fmtViews(h, hit.views)
         ).filter { it.isNotEmpty() }.joinToString(" • ")
         Thumbs.load(hit.thumbUrl, h.thumb)
+        if (hit.durationSec > 0) {
+            h.badge.visibility = View.VISIBLE
+            h.badge.text = fmtDuration(hit.durationSec)
+        } else {
+            h.badge.visibility = View.GONE
+        }
         h.itemView.setOnClickListener { onPick(hit) }
     }
 
