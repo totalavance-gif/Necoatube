@@ -27,6 +27,19 @@ jobs:
           set -o pipefail
           ./gradlew assembleDebug --stacktrace 2>&1 | tee build.log
 
+      - name: Report failure log
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo 'Release APK failed, see tail of the log:'
+            echo '```'
+            tail -c 50000 build.log
+            echo '```'
+          } > failure-report.md
+          gh issue create --title "CI failure: Release APK" --body-file failure-report.md
+
       - name: Create release with APK
         env:
           GH_TOKEN: ${{ github.token }}

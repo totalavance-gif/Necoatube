@@ -49,7 +49,7 @@ Vacío = solo motor interno.
 
 ## App
 
-- Kotlin, minSdk 24, AGP 8.5.2, Gradle 8.9, JDK 17.
+- Kotlin, minSdk 24, compileSdk 35, AGP 8.7.3, Gradle 8.9, JDK 17.
 - El APK se compila en GitHub Actions (este equipo es aarch64 y los
   build-tools son x86_64): push a `main` → artefacto `app-debug`;
   tag `v*` → Release pública con el APK.
