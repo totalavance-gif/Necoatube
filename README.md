@@ -1,5 +1,10 @@
 # NexosPlay
 
+[![Build APK](https://github.com/totalavance-gif/Necoatube/actions/workflows/build-apk.yml/badge.svg)](https://github.com/totalavance-gif/Necoatube/actions/workflows/build-apk.yml)
+[![Upstream](https://github.com/totalavance-gif/Necoatube/actions/workflows/upstream.yml/badge.svg)](https://github.com/totalavance-gif/Necoatube/actions/workflows/upstream.yml)
+
+Monitor del extractor: [STATUS.md](STATUS.md).
+
 App Android (Kotlin) + servidor opcional (Python): busca y reproduce YouTube sin
 cuenta y sin anuncios, descarga video/audio en el equipo o vía servidor propio.
 

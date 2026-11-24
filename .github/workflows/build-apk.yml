@@ -3,6 +3,7 @@ name: Build APK
 on:
   push:
     branches: [main]
+    paths-ignore: ['STATUS.md']
   pull_request:
     branches: [main]
   workflow_dispatch:
