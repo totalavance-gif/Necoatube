@@ -109,6 +109,12 @@ class PlayerActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         PlayerHolder.ensure(this)
+        PlayerHolder.onPlayerEvent = { msg ->
+            findViewById<TextView>(R.id.status).text = msg
+            if (msg.startsWith("Error")) {
+                Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+            }
+        }
         findViewById<PlayerView>(R.id.player_view).player = PlayerHolder.player
         val loaded = PlayerHolder.playable
         if (loaded != null && PlayerHolder.pageUrl == pageUrl) {
@@ -127,6 +133,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onStop() {
         PlayerHolder.savePosition()
+        PlayerHolder.onPlayerEvent = null
         findViewById<PlayerView>(R.id.player_view).player = null
         super.onStop()
     }
@@ -151,8 +158,9 @@ class PlayerActivity : AppCompatActivity() {
                 PlayerHolder.pageUrl = want
                 PlayerHolder.qualityIndex = 0
                 bindInfo(p)
+                status.text = "Streams: ${p.video?.label ?: "-"} + " +
+                    "${p.audio?.label ?: "-"}"
                 playCurrent()
-                status.text = ""
             } catch (e: Exception) {
                 if (want == pageUrl) {
                     status.text = getString(

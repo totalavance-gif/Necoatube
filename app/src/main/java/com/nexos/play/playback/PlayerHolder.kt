@@ -3,6 +3,8 @@ package com.nexos.play.playback
 import android.content.Context
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
@@ -24,18 +26,45 @@ object PlayerHolder {
     var audioOnly: Boolean = false
     var qualityIndex: Int = 0
     val positions = mutableMapOf<String, Long>()
+    var onPlayerEvent: ((String) -> Unit)? = null
+
+    private val eventListener = object : Player.Listener {
+        override fun onPlayerError(error: PlaybackException) {
+            onPlayerEvent?.invoke("Error ${error.errorCodeName}: ${error.message}")
+        }
+
+        override fun onPlaybackStateChanged(state: Int) {
+            reportState()
+        }
+
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            reportState()
+        }
+    }
+
+    private fun reportState() {
+        val p = player ?: return
+        val s = when (p.playbackState) {
+            Player.STATE_IDLE -> "detenido"
+            Player.STATE_BUFFERING -> "cargando…"
+            Player.STATE_READY -> if (p.playWhenReady) "reproduciendo" else "en pausa"
+            Player.STATE_ENDED -> "terminado"
+            else -> "?"
+        }
+        onPlayerEvent?.invoke("Estado: $s")
+    }
 
     fun ensure(ctx: Context): ExoPlayer {
         player?.let { return it }
         val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(10_000, 20_000, 800, 2_000)
-            .setPrioritizeTimeOverSizeThresholds(true)
+            .setBufferDurationsMs(15_000, 30_000, 1_500, 3_000)
             .build()
         val created = ExoPlayer.Builder(ctx.applicationContext)
             .setLoadControl(loadControl)
             .setAudioAttributes(AudioAttributes.DEFAULT, true)
             .setHandleAudioBecomingNoisy(true)
             .build()
+        created.addListener(eventListener)
         player = created
         return created
     }
