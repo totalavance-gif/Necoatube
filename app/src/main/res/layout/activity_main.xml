@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/yt_bg"
@@ -10,15 +11,16 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:paddingStart="12dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="4dp"
+        android:paddingBottom="8dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="▶"
-            android:textColor="@color/yt_red"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+        <ImageView
+            android:layout_width="34dp"
+            android:layout_height="24dp"
+            android:contentDescription="@string/app_name"
+            android:src="@drawable/yt_logo" />
 
         <TextView
             android:layout_width="0dp"
@@ -29,6 +31,15 @@
             android:textColor="@color/yt_text"
             android:textSize="20sp"
             android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/btn_search_toggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/search_desc"
+            android:padding="12dp"
+            android:src="@drawable/ic_search" />
 
         <TextView
             android:id="@+id/btn_server"
@@ -44,12 +55,14 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/search_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="12dp"
-        android:paddingEnd="4dp">
+        android:paddingEnd="4dp"
+        android:visibility="gone">
 
         <EditText
             android:id="@+id/search_input"
@@ -84,51 +97,6 @@
             android:padding="12dp"
             android:src="@drawable/ic_mic" />
     </LinearLayout>
-
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="12dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="12dp">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/sec_feed"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/sec_feed" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/sec_history"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="@string/sec_history" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/sec_favs"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="@string/sec_favs" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/sec_lists"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="@string/sec_lists" />
-        </LinearLayout>
-    </HorizontalScrollView>
 
     <ProgressBar
         android:id="@+id/progress"
@@ -188,4 +156,14 @@
         android:layout_height="0dp"
         android:layout_marginTop="4dp"
         android:layout_weight="1" />
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/yt_bg"
+        app:itemIconTint="@color/yt_text"
+        app:itemTextColor="@color/yt_text"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/nav_main" />
 </LinearLayout>

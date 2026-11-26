@@ -28,6 +28,7 @@ class ResultsAdapter(
         val badge: TextView = v.findViewById(R.id.badge_duration)
         val title: TextView = v.findViewById(R.id.title)
         val meta: TextView = v.findViewById(R.id.meta)
+        val avatar: TextView = v.findViewById(R.id.avatar_initial)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
@@ -39,6 +40,7 @@ class ResultsAdapter(
     override fun onBindViewHolder(h: Holder, position: Int) {
         val hit = items[position]
         h.title.text = hit.title
+        h.avatar.text = hit.uploader.trim().firstOrNull()?.uppercase() ?: "?"
         h.meta.text = listOf(
             hit.uploader.ifBlank { h.itemView.context.getString(R.string.unknown_uploader) },
             fmtDuration(hit.durationSec),

@@ -3,8 +3,10 @@
     <color name="yt_bg">#0F0F0F</color>
     <color name="yt_surface">#212121</color>
     <color name="yt_chip">#272727</color>
-    <color name="yt_text">#FFFFFF</color>
+    <color name="yt_text">#F1F1F1</color>
     <color name="yt_text2">#AAAAAA</color>
     <color name="yt_red">#FF0000</color>
     <color name="yt_badge">#CC000000</color>
+    <color name="yt_sub_bg">#F1F1F1</color>
+    <color name="yt_sub_text">#0F0F0F</color>
 </resources>

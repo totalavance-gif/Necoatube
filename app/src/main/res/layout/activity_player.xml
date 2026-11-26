@@ -74,15 +74,17 @@
                         android:textColor="@color/yt_text"
                         android:textSize="14sp"
                         android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/channel_meta"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:maxLines="1"
-                        android:textColor="@color/yt_text2"
-                        android:textSize="12sp" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_fav"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/fav_off"
+                    android:textColor="@color/yt_sub_text"
+                    app:backgroundTint="@color/yt_sub_bg"
+                    app:cornerRadius="18dp" />
             </LinearLayout>
 
             <HorizontalScrollView
@@ -100,7 +102,8 @@
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/audio_off" />
+                        android:text="@string/audio_off"
+                        app:icon="@drawable/ic_audio" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_shuffle"
@@ -127,20 +130,13 @@
                         android:text="@string/quality_title" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_fav"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/fav_off" />
-
-                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_save"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="@string/btn_save" />
+                        android:text="@string/btn_save"
+                        app:icon="@drawable/ic_save" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_lyrics"
@@ -172,7 +168,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="@string/btn_download_video" />
+                        android:text="@string/btn_download_video"
+                        app:icon="@drawable/ic_download" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_dl_audio"
@@ -188,7 +185,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="@string/btn_share" />
+                        android:text="@string/btn_share"
+                        app:icon="@drawable/ic_share" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_backend"
@@ -208,23 +206,33 @@
                 android:textColor="@color/yt_text2"
                 android:textSize="13sp" />
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/desc_title"
-                android:textColor="@color/yt_text"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="12dp"
+                android:background="@drawable/desc_bg"
+                android:orientation="vertical"
+                android:padding="12dp">
 
-            <TextView
-                android:id="@+id/video_desc"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="4"
-                android:textColor="@color/yt_text2"
-                android:textSize="13sp" />
+                <TextView
+                    android:id="@+id/channel_meta"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:textColor="@color/yt_text"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/video_desc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:maxLines="4"
+                    android:textColor="@color/yt_text2"
+                    android:textSize="13sp" />
+            </LinearLayout>
 
             <TextView
                 android:layout_width="match_parent"

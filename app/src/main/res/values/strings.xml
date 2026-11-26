@@ -74,8 +74,8 @@
     <string name="backup_share">Compartir respaldo</string>
     <string name="backup_done">Respaldo restaurado</string>
     <string name="backup_bad">Archivo inválido</string>
-    <string name="fav_on">♥ En favs</string>
-    <string name="fav_off">♡ Fav</string>
+    <string name="fav_on">Suscrito</string>
+    <string name="fav_off">Suscribirse</string>
     <string name="fav_added">Agregado a favoritos</string>
     <string name="fav_removed">Quitado de favoritos</string>
     <string name="favs_title">Favoritos</string>

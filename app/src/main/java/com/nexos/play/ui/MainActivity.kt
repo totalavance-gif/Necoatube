@@ -81,10 +81,25 @@ class MainActivity : AppCompatActivity() {
         list.layoutManager = LinearLayoutManager(this)
         list.adapter = adapter
 
-        findViewById<View>(R.id.sec_feed).setOnClickListener { showSection(0) }
-        findViewById<View>(R.id.sec_history).setOnClickListener { showSection(1) }
-        findViewById<View>(R.id.sec_favs).setOnClickListener { showSection(2) }
-        findViewById<View>(R.id.sec_lists).setOnClickListener { showListsDialog() }
+        findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(
+            R.id.bottom_nav
+        ).setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> showSection(0)
+                R.id.nav_history -> showSection(1)
+                R.id.nav_favs -> showSection(2)
+                R.id.nav_lists -> showListsDialog()
+                else -> return@setOnItemSelectedListener false
+            }
+            true
+        }
+        findViewById<View>(R.id.btn_search_toggle).setOnClickListener {
+            val row = findViewById<View>(R.id.search_row)
+            row.visibility = if (row.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            if (row.visibility == View.VISIBLE) {
+                findViewById<EditText>(R.id.search_input).requestFocus()
+            }
+        }
         findViewById<TextView>(R.id.history_clear).setOnClickListener { clearAction() }
         findViewById<TextView>(R.id.btn_server).setOnClickListener { showMenu() }
         findViewById<ImageButton>(R.id.btn_voice).setOnClickListener { startVoice() }

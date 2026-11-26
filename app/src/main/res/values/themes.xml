@@ -2,6 +2,8 @@
 <resources>
     <style name="Theme.NexosPlay" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/yt_bg</item>
+        <item name="android:statusBarColor">@color/yt_bg</item>
+        <item name="android:navigationBarColor">@color/yt_bg</item>
         <item name="colorPrimary">@color/yt_red</item>
         <item name="android:textColorPrimary">@color/yt_text</item>
         <item name="android:textColorSecondary">@color/yt_text2</item>

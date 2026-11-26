@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#3DDC84</color>
+    <color name="ic_launcher_background">#0F0F0F</color>
     <color name="yt_bg">#FFFFFF</color>
     <color name="yt_surface">#F2F2F2</color>
     <color name="yt_chip">#EFEFEF</color>
@@ -8,4 +8,6 @@
     <color name="yt_text2">#606060</color>
     <color name="yt_red">#FF0000</color>
     <color name="yt_badge">#CC000000</color>
+    <color name="yt_sub_bg">#0F0F0F</color>
+    <color name="yt_sub_text">#FFFFFF</color>
 </resources>
