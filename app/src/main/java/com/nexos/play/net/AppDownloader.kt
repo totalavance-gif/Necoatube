@@ -26,6 +26,25 @@ class AppDownloader private constructor() : Downloader() {
         fun get(): AppDownloader = instance ?: synchronized(this) {
             instance ?: AppDownloader().also { instance = it }
         }
+
+        @Volatile private var playClient: OkHttpClient? = null
+
+        /** Cliente para el reproductor: mismo UA, HTTP/2 y reintentos. */
+        fun playbackClient(): OkHttpClient = playClient ?: synchronized(this) {
+            playClient ?: OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
+                .addInterceptor { chain ->
+                    chain.proceed(
+                        chain.request().newBuilder()
+                            .header("User-Agent", USER_AGENT)
+                            .build()
+                    )
+                }
+                .build()
+                .also { playClient = it }
+        }
     }
 
     @Throws(IOException::class, ReCaptchaException::class)

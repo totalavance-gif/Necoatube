@@ -11,8 +11,8 @@ android {
         applicationId 'com.nexos.play'
         minSdk 24
         targetSdk 34
-        versionCode 12
-        versionName '1.9.1'
+        versionCode 13
+        versionName '1.9.2'
     }
 
     buildFeatures {
@@ -47,5 +47,6 @@ dependencies {
     implementation 'androidx.media3:media3-exoplayer:1.7.1'
     implementation 'androidx.media3:media3-ui:1.7.1'
     implementation 'androidx.media3:media3-session:1.7.1'
+    implementation 'androidx.media3:media3-datasource-okhttp:1.7.1'
     testImplementation 'junit:junit:4.13.2'
 }

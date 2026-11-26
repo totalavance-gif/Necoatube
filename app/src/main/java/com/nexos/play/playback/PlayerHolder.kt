@@ -11,8 +11,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.HttpDataSource
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MergingMediaSource
@@ -115,12 +115,49 @@ object PlayerHolder {
 
         override fun onPlaybackStateChanged(state: Int) {
             reportState()
+            if (state == Player.STATE_BUFFERING) scheduleBufferWatch()
+            else cancelBufferWatch()
             if (state == Player.STATE_ENDED) onEnded?.invoke()
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             reportState()
         }
+    }
+
+    private val bufferHandler = Handler(Looper.getMainLooper())
+    private var bufferRunnable: Runnable? = null
+
+    /** Si lleva 8s atascado cargando, baja solo a un paso con video. */
+    private fun scheduleBufferWatch() {
+        cancelBufferWatch()
+        val stepAtStart = ladderIndex
+        val r = Runnable {
+            bufferRunnable = null
+            if (player?.playbackState == Player.STATE_BUFFERING &&
+                ladderIndex == stepAtStart
+            ) {
+                val next = ((ladderIndex + 1) until ladder.size)
+                    .firstOrNull { ladder[it].video != null }
+                if (next != null) {
+                    onPlayerEvent?.invoke(
+                        str(
+                            com.nexos.play.R.string.buffering_drop,
+                            "Conexión lenta: bajando calidad…"
+                        )
+                    )
+                    ladderIndex = next
+                    playStep()
+                }
+            }
+        }
+        bufferRunnable = r
+        bufferHandler.postDelayed(r, 8_000)
+    }
+
+    private fun cancelBufferWatch() {
+        bufferRunnable?.let { bufferHandler.removeCallbacks(it) }
+        bufferRunnable = null
     }
 
     private fun reportState() {
@@ -139,7 +176,7 @@ object PlayerHolder {
         player?.let { return it }
         appCtx = ctx.applicationContext
         val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(15_000, 30_000, 1_500, 3_000)
+            .setBufferDurationsMs(30_000, 60_000, 1_500, 3_000)
             .build()
         val created = ExoPlayer.Builder(ctx.applicationContext)
             .setLoadControl(loadControl)
@@ -185,6 +222,7 @@ object PlayerHolder {
     fun playMedia(p: Playable, audioOnly: Boolean, qualityIndex: Int) {
         lastAudioOnly = audioOnly
         lastQuality = qualityIndex
+        cancelBufferWatch()
         ladder = buildLadder(p, audioOnly, qualityIndex)
         ladderIndex = 0
         refreshed = false
@@ -228,7 +266,7 @@ object PlayerHolder {
             return
         }
         val factory = ProgressiveMediaSource.Factory(
-            DefaultHttpDataSource.Factory().setUserAgent(AppDownloader.USER_AGENT)
+            OkHttpDataSource.Factory(AppDownloader.playbackClient())
         )
         val v = step.video
         val a = step.audio
