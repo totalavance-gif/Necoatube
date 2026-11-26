@@ -149,6 +149,23 @@ object YouTubeRepo {
             .map { StreamChoice(it.content, it.resolution, it.format?.suffix ?: "mp4", true) }
     }
 
+    /** Indice inicial: la mayor altura que no pase el tope (arranque rapido).
+     *  Si todas lo pasan, la mas baja. Opciones vacias -> 0. */
+    fun defaultQualityIndex(options: List<StreamChoice>, maxHeight: Int): Int {
+        if (options.isEmpty()) return 0
+        options.forEachIndexed { i, o ->
+            if (heightOf(o) in 1..maxHeight) return i
+        }
+        var best = 0
+        options.forEachIndexed { i, o ->
+            if (heightOf(o) < heightOf(options[best])) best = i
+        }
+        return best
+    }
+
+    fun heightOf(c: StreamChoice): Int =
+        c.label.filter { it.isDigit() }.toIntOrNull() ?: 0
+
     /** Audios progresivos por bitrate, de mayor a menor. */
     private fun audioOptions(streams: List<AudioStream>): List<StreamChoice> {
         return streams

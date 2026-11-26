@@ -8,6 +8,7 @@ object Prefs {
     private const val KEY_SHUFFLE = "shuffle"
     private const val KEY_DARK = "dark_mode"
     private const val KEY_SPEED = "speed"
+    private const val KEY_QUALITY = "quality_height"
     private const val KEY_POSITIONS = "positions"
     private const val KEY_UPDATE_CHECK = "update_check"
 
@@ -52,6 +53,16 @@ object Prefs {
     fun setSpeed(ctx: Context, value: Float) {
         ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit().putFloat(KEY_SPEED, value).apply()
+    }
+
+    /** Altura preferida (720 por defecto: arranque rapido). */
+    fun qualityHeight(ctx: Context): Int =
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .getInt(KEY_QUALITY, 720).takeIf { it > 0 } ?: 720
+
+    fun setQualityHeight(ctx: Context, value: Int) {
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_QUALITY, value).apply()
     }
 
     fun positions(ctx: Context): MutableMap<String, Long> {

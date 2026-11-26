@@ -215,7 +215,8 @@ class PlayerActivity : AppCompatActivity() {
                 if (want != pageUrl) return@launch
                 PlayerHolder.playable = p
                 PlayerHolder.pageUrl = want
-                PlayerHolder.qualityIndex = 0
+                PlayerHolder.qualityIndex =
+                    YouTubeRepo.defaultQualityIndex(p.videoOptions, Prefs.qualityHeight(this@PlayerActivity))
                 bindInfo(p)
                 status.text = "Streams: ${p.video?.label ?: "-"} + " +
                     "${p.audio?.label ?: "-"}"
@@ -336,6 +337,9 @@ class PlayerActivity : AppCompatActivity() {
             ) { d, i ->
                 PlayerHolder.savePosition()
                 PlayerHolder.qualityIndex = i
+                opts.getOrNull(i)?.let {
+                    Prefs.setQualityHeight(this, YouTubeRepo.heightOf(it).takeIf { h -> h > 0 } ?: 720)
+                }
                 updateQualityButton()
                 playCurrent()
                 d.dismiss()
@@ -503,6 +507,7 @@ class PlayerActivity : AppCompatActivity() {
         PlayerHolder.audioOnly = false
         PlayerHolder.qualityIndex = 0
         pageUrl = url
+        // NOTE: resolve() recalcula el indice segun la altura preferida.
         PlayerHolder.positions.remove(url)
         boundUrl = null
         findViewById<TextView>(R.id.video_title).text = title
