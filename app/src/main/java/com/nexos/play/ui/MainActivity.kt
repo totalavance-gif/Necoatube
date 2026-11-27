@@ -317,8 +317,12 @@ class MainActivity : AppCompatActivity() {
         val themeLabel = getString(
             if (Prefs.darkMode(this)) R.string.menu_theme_dark else R.string.menu_theme_light
         )
+        val prebufferLabel = getString(
+            if (Prefs.prebuffer30(this)) R.string.menu_prebuffer_on else R.string.menu_prebuffer_off
+        )
         val items = arrayOf(
-            getString(R.string.menu_server), themeLabel, getString(R.string.menu_backup)
+            getString(R.string.menu_server), themeLabel,
+            getString(R.string.menu_backup), prebufferLabel
         )
         AlertDialog.Builder(this)
             .setTitle(R.string.menu_title)
@@ -330,7 +334,11 @@ class MainActivity : AppCompatActivity() {
                         Prefs.applyTheme(this)
                         recreate()
                     }
-                    else -> backupDialog()
+                    2 -> backupDialog()
+                    else -> {
+                        Prefs.setPrebuffer30(this, !Prefs.prebuffer30(this))
+                        Toast.makeText(this, R.string.prebuffer_note, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)

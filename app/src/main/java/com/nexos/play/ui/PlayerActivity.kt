@@ -267,6 +267,7 @@ class PlayerActivity : AppCompatActivity() {
         }
         PlayerHolder.ensure(this)
         PlayerHolder.playMedia(p, PlayerHolder.audioOnly, PlayerHolder.qualityIndex)
+        findViewById<PlayerView>(R.id.player_view).player = PlayerHolder.player
         PlaybackService.start(this)
         History.record(
             this,

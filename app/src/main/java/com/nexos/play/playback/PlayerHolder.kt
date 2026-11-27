@@ -116,7 +116,10 @@ object PlayerHolder {
         override fun onPlaybackStateChanged(state: Int) {
             reportState()
             if (state == Player.STATE_BUFFERING) scheduleBufferWatch()
-            else cancelBufferWatch()
+            else {
+                cancelBufferWatch()
+                if (state == Player.STATE_READY) playedOnce = true
+            }
             if (state == Player.STATE_ENDED) onEnded?.invoke()
         }
 
@@ -128,10 +131,14 @@ object PlayerHolder {
     private val bufferHandler = Handler(Looper.getMainLooper())
     private var bufferRunnable: Runnable? = null
 
-    /** Si lleva 8s atascado cargando, baja solo a un paso con video. */
+    private var playedOnce = false
+
+    /** Si se atasca cargando, baja solo a un paso con video.
+     *  8s tras empezar; 25s en la carga inicial (da tiempo a la precarga). */
     private fun scheduleBufferWatch() {
         cancelBufferWatch()
         val stepAtStart = ladderIndex
+        val wasPlayed = playedOnce
         val r = Runnable {
             bufferRunnable = null
             if (player?.playbackState == Player.STATE_BUFFERING &&
@@ -152,7 +159,7 @@ object PlayerHolder {
             }
         }
         bufferRunnable = r
-        bufferHandler.postDelayed(r, 8_000)
+        bufferHandler.postDelayed(r, if (wasPlayed) 8_000 else 25_000)
     }
 
     private fun cancelBufferWatch() {
@@ -172,11 +179,15 @@ object PlayerHolder {
         onPlayerEvent?.invoke("Estado: $s")
     }
 
+    private var builtPrebuffer: Boolean? = null
+
     fun ensure(ctx: Context): ExoPlayer {
         player?.let { return it }
         appCtx = ctx.applicationContext
+        val wantPrebuffer = com.nexos.play.util.Prefs.prebuffer30(ctx)
+        val startMs = if (wantPrebuffer) 30_000 else 1_500
         val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(30_000, 60_000, 1_500, 3_000)
+            .setBufferDurationsMs(30_000, 60_000, startMs, 3_000)
             .build()
         val created = ExoPlayer.Builder(ctx.applicationContext)
             .setLoadControl(loadControl)
@@ -185,11 +196,22 @@ object PlayerHolder {
             .build()
         created.addListener(eventListener)
         player = created
+        builtPrebuffer = wantPrebuffer
         loadPositions()
         session = MediaSession.Builder(ctx.applicationContext, created)
             .setSessionActivity(openIntent())
             .build()
         return created
+    }
+
+    private fun releasePlayer() {
+        savePosition()
+        cancelBufferWatch()
+        cancelSleepTimer()
+        runCatching { player?.release() }
+        player = null
+        runCatching { session?.release() }
+        session = null
     }
 
     private fun openIntent(): PendingIntent {
@@ -220,6 +242,14 @@ object PlayerHolder {
     }
 
     fun playMedia(p: Playable, audioOnly: Boolean, qualityIndex: Int) {
+        // Si cambio la precarga, reconstruir el motor (aplica por video).
+        appCtx?.let { ctx ->
+            val want = com.nexos.play.util.Prefs.prebuffer30(ctx)
+            if (player != null && builtPrebuffer != want) {
+                releasePlayer()
+                ensure(ctx)
+            }
+        }
         lastAudioOnly = audioOnly
         lastQuality = qualityIndex
         cancelBufferWatch()
@@ -265,6 +295,7 @@ object PlayerHolder {
             nextOrFail()
             return
         }
+        playedOnce = false
         val factory = ProgressiveMediaSource.Factory(
             OkHttpDataSource.Factory(AppDownloader.playbackClient())
         )

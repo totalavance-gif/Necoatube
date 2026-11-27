@@ -9,6 +9,7 @@ object Prefs {
     private const val KEY_DARK = "dark_mode"
     private const val KEY_SPEED = "speed"
     private const val KEY_QUALITY = "quality_height"
+    private const val KEY_PREBUFFER = "prebuffer_30"
     private const val KEY_POSITIONS = "positions"
     private const val KEY_UPDATE_CHECK = "update_check"
 
@@ -53,6 +54,15 @@ object Prefs {
     fun setSpeed(ctx: Context, value: Float) {
         ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit().putFloat(KEY_SPEED, value).apply()
+    }
+
+    fun prebuffer30(ctx: Context): Boolean =
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .getBoolean(KEY_PREBUFFER, true)
+
+    fun setPrebuffer30(ctx: Context, value: Boolean) {
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_PREBUFFER, value).apply()
     }
 
     /** Altura preferida (720 por defecto: arranque rapido). */
