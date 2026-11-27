@@ -29,7 +29,8 @@ data class StreamChoice(
     val url: String,
     val label: String,
     val ext: String,
-    val videoOnly: Boolean = false
+    val videoOnly: Boolean = false,
+    val language: String = ""
 )
 
 data class Playable(
@@ -101,15 +102,25 @@ object YouTubeRepo {
                 val service = NewPipe.getService("YouTube")
                 val info = StreamInfo.getInfo(service, pageUrl)
                 val muxed = muxedOptions(info.videoStreams.orEmpty())
-                val options = muxed.ifEmpty {
-                    videoOnlyOptions(info.videoOnlyStreams.orEmpty())
-                }
                 val audios = audioOptions(info.audioStreams.orEmpty())
+                // Video doblado: el muxed trae el audio original; si hay
+                // pista en el idioma del equipo, usar video solo + ese audio.
+                val deviceLang = java.util.Locale.getDefault().language
+                val langs = audios.mapNotNull { it.language.ifBlank { null } }.toSet()
+                val dub = if (langs.size > 1) {
+                    audios.firstOrNull { it.language == deviceLang }
+                } else {
+                    null
+                }
+                val vo = videoOnlyOptions(info.videoOnlyStreams.orEmpty())
+                val options = if (dub != null && vo.isNotEmpty()) vo
+                else muxed.ifEmpty { vo }
+                val audio = dub ?: audios.firstOrNull()
                 Playable(
                     title = info.name,
                     uploader = info.uploaderName ?: "",
                     video = options.firstOrNull(),
-                    audio = audios.firstOrNull(),
+                    audio = audio,
                     videoOptions = options,
                     audioOptions = audios,
                     description = info.description?.content().orEmpty(),
@@ -196,14 +207,22 @@ object YouTubeRepo {
             }
     }
 
-    /** Audios progresivos por bitrate, de mayor a menor. */
+    /** Audios progresivos: primero el idioma del equipo, luego por bitrate. */
     private fun audioOptions(streams: List<AudioStream>): List<StreamChoice> {
+        val deviceLang = java.util.Locale.getDefault().language
         return streams
             .filter { it.isUrl && it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP }
-            .sortedByDescending { maxOf(it.averageBitrate, 0) }
             .map {
                 val kbps = if (it.averageBitrate > 0) "${it.averageBitrate / 1000}k" else "audio"
-                StreamChoice(it.content, kbps, it.format?.suffix ?: "m4a")
+                Triple(it, maxOf(it.averageBitrate, 0), it.audioLocale?.language.orEmpty())
+            }
+            .sortedWith(
+                compareBy<Triple<AudioStream, Int, String>> { it.third != deviceLang }
+                    .thenByDescending { it.second }
+            )
+            .map { (it, _, lang) ->
+                val kbps = if (it.averageBitrate > 0) "${it.averageBitrate / 1000}k" else "audio"
+                StreamChoice(it.content, kbps, it.format?.suffix ?: "m4a", false, lang)
             }
     }
 
