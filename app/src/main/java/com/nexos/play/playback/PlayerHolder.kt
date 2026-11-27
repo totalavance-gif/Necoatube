@@ -208,7 +208,7 @@ object PlayerHolder {
         player?.let { return it }
         appCtx = ctx.applicationContext
         val wantPrebuffer = com.nexos.play.util.Prefs.prebuffer30(ctx)
-        val startMs = if (wantPrebuffer) 30_000 else 1_500
+        val startMs = if (wantPrebuffer) 20_000 else 1_500
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(30_000, 60_000, startMs, 3_000)
             .build()

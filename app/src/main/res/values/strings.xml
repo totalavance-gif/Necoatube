@@ -89,8 +89,8 @@
     <string name="subs_title">Descargar subtítulos</string>
     <string name="subs_none">Sin subtítulos disponibles</string>
     <string name="menu_backup">Respaldar</string>
-    <string name="menu_prebuffer_on">Precarga 30s: sí</string>
-    <string name="menu_prebuffer_off">Precarga 30s: no</string>
+    <string name="menu_prebuffer_on">Precarga 20s: sí</string>
+    <string name="menu_prebuffer_off">Precarga 20s: no</string>
     <string name="prebuffer_note">Se aplica en el próximo video</string>
     <string name="backup_title">Respaldo</string>
     <string name="backup_export">Exportar</string>
