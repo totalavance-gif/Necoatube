@@ -196,12 +196,19 @@ object PlayerHolder {
             .build()
         created.addListener(eventListener)
         player = created
+        applySkipSilence()
         builtPrebuffer = wantPrebuffer
         loadPositions()
         session = MediaSession.Builder(ctx.applicationContext, created)
             .setSessionActivity(openIntent())
             .build()
         return created
+    }
+
+    fun applySkipSilence() {
+        val ctx = appCtx ?: return
+        player?.skipSilenceEnabled =
+            com.nexos.play.util.Prefs.skipSilence(ctx)
     }
 
     private fun releasePlayer() {

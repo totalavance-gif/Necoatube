@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/yt_bg"
+    android:background="?attr/ytBg"
     android:orientation="vertical">
 
     <LinearLayout
@@ -28,7 +28,7 @@
             android:layout_marginStart="6dp"
             android:layout_weight="1"
             android:text="@string/app_name"
-            android:textColor="@color/yt_text"
+            android:textColor="?attr/ytText"
             android:textSize="20sp"
             android:textStyle="bold" />
 
@@ -50,7 +50,7 @@
             android:focusable="true"
             android:padding="8dp"
             android:text="⋮"
-            android:textColor="@color/yt_text"
+            android:textColor="?attr/ytText"
             android:textSize="24sp" />
     </LinearLayout>
 
@@ -75,8 +75,8 @@
             android:inputType="text"
             android:padding="12dp"
             android:singleLine="true"
-            android:textColor="@color/yt_text"
-            android:textColorHint="@color/yt_text2"
+            android:textColor="?attr/ytText"
+            android:textColorHint="?attr/ytText2"
             android:textSize="15sp" />
 
         <ImageButton
@@ -114,7 +114,7 @@
         android:paddingStart="12dp"
         android:paddingTop="6dp"
         android:paddingEnd="12dp"
-        android:textColor="@color/yt_text2"
+        android:textColor="?attr/ytText2"
         android:textSize="13sp" />
 
     <LinearLayout
@@ -134,7 +134,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/history_title"
-            android:textColor="@color/yt_text"
+            android:textColor="?attr/ytText"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -146,7 +146,7 @@
             android:focusable="true"
             android:padding="6dp"
             android:text="@string/history_clear"
-            android:textColor="@color/yt_text2"
+            android:textColor="?attr/ytText2"
             android:textSize="13sp" />
     </LinearLayout>
 
@@ -161,9 +161,9 @@
         android:id="@+id/bottom_nav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/yt_bg"
-        app:itemIconTint="@color/yt_text"
-        app:itemTextColor="@color/yt_text"
+        android:background="?attr/ytBg"
+        app:itemIconTint="?attr/ytText"
+        app:itemTextColor="?attr/ytText"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/nav_main" />
 </LinearLayout>

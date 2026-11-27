@@ -64,6 +64,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Prefs.applyOverlay(this)
         setContentView(R.layout.activity_main)
 
         val input = findViewById<EditText>(R.id.search_input)
@@ -315,31 +316,68 @@ class MainActivity : AppCompatActivity() {
 
     private fun showMenu() {
         val themeLabel = getString(
-            if (Prefs.darkMode(this)) R.string.menu_theme_dark else R.string.menu_theme_light
+            R.string.menu_theme, getString(
+                when (Prefs.themeMode(this)) {
+                    0 -> R.string.theme_light
+                    2 -> R.string.theme_black
+                    else -> R.string.theme_dark
+                }
+            )
         )
         val prebufferLabel = getString(
             if (Prefs.prebuffer30(this)) R.string.menu_prebuffer_on else R.string.menu_prebuffer_off
         )
+        val podcastLabel = getString(
+            if (Prefs.podcastMode(this)) R.string.menu_podcast_on else R.string.menu_podcast_off
+        )
+        val silenceLabel = getString(
+            if (Prefs.skipSilence(this)) R.string.menu_silence_on else R.string.menu_silence_off
+        )
         val items = arrayOf(
             getString(R.string.menu_server), themeLabel,
-            getString(R.string.menu_backup), prebufferLabel
+            getString(R.string.menu_backup), prebufferLabel,
+            podcastLabel, silenceLabel
         )
         AlertDialog.Builder(this)
             .setTitle(R.string.menu_title)
             .setItems(items) { _, i ->
                 when (i) {
                     0 -> askBackend()
-                    1 -> {
-                        Prefs.setDarkMode(this, !Prefs.darkMode(this))
-                        Prefs.applyTheme(this)
-                        recreate()
-                    }
+                    1 -> themeDialog()
                     2 -> backupDialog()
-                    else -> {
+                    3 -> {
                         Prefs.setPrebuffer30(this, !Prefs.prebuffer30(this))
                         Toast.makeText(this, R.string.prebuffer_note, Toast.LENGTH_SHORT).show()
                     }
+                    4 -> {
+                        Prefs.setPodcastMode(this, !Prefs.podcastMode(this))
+                        Toast.makeText(this, R.string.podcast_note, Toast.LENGTH_SHORT).show()
+                    }
+                    else -> {
+                        Prefs.setSkipSilence(this, !Prefs.skipSilence(this))
+                        com.nexos.play.playback.PlayerHolder.applySkipSilence()
+                    }
                 }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun themeDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.theme_title)
+            .setSingleChoiceItems(
+                arrayOf(
+                    getString(R.string.theme_light),
+                    getString(R.string.theme_dark),
+                    getString(R.string.theme_black)
+                ),
+                Prefs.themeMode(this)
+            ) { d, i ->
+                Prefs.setThemeMode(this, i)
+                Prefs.applyTheme(this)
+                d.dismiss()
+                recreate()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="ytBg" format="color" />
+    <attr name="ytSurface" format="color" />
+    <attr name="ytChip" format="color" />
+    <attr name="ytText" format="color" />
+    <attr name="ytText2" format="color" />
+    <attr name="ytSubBg" format="color" />
+    <attr name="ytSubText" format="color" />
+</resources>

@@ -9,6 +9,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.view.View
 import android.widget.EditText
 import android.widget.ProgressBar
@@ -63,6 +65,7 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Prefs.applyOverlay(this)
         setContentView(R.layout.activity_player)
         val (startUrl, startTitle) = urlFromIntent(intent)
         pageUrl = startUrl
@@ -72,6 +75,7 @@ class PlayerActivity : AppCompatActivity() {
         }
         findViewById<TextView>(R.id.video_title).text = startTitle
         sizePlayer()
+        setupGestures()
 
         upNext = ResultsAdapter(
             onPick = { hit -> openVideo(hit.url, hit.title, hit.thumbUrl) }
@@ -138,6 +142,44 @@ class PlayerActivity : AppCompatActivity() {
         val view = findViewById<PlayerView>(R.id.player_view)
         view.layoutParams = view.layoutParams.apply {
             height = resources.displayMetrics.widthPixels * 9 / 16
+        }
+    }
+
+    /** Doble toque ±10s, mantener = 2x. El toque simple pasa al control. */
+    private fun setupGestures() {
+        val view = findViewById<PlayerView>(R.id.player_view)
+        var hold2x = false
+        val detector = GestureDetector(
+            this,
+            object : GestureDetector.SimpleOnGestureListener() {
+                override fun onDoubleTap(e: MotionEvent): Boolean {
+                    val p = PlayerHolder.player ?: return true
+                    val w = view.width.takeIf { it > 0 } ?: return true
+                    val delta = if (e.x < w / 2) -10_000L else 10_000L
+                    p.seekTo((p.currentPosition + delta).coerceAtLeast(0L))
+                    Toast.makeText(
+                        this@PlayerActivity,
+                        if (delta < 0) "-10 s" else "+10 s",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return true
+                }
+
+                override fun onLongPress(e: MotionEvent) {
+                    hold2x = true
+                    PlayerHolder.player?.setPlaybackSpeed(2f)
+                    Toast.makeText(this@PlayerActivity, "2x", Toast.LENGTH_SHORT).show()
+                }
+
+                override fun onSingleTapConfirmed(e: MotionEvent): Boolean = false
+            }
+        )
+        view.setOnTouchListener { _, ev ->
+            if (ev.action == MotionEvent.ACTION_UP && hold2x) {
+                hold2x = false
+                PlayerHolder.player?.setPlaybackSpeed(PlayerHolder.speed)
+            }
+            detector.onTouchEvent(ev)
         }
     }
 
@@ -488,9 +530,15 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun share() {
+        val sec = (PlayerHolder.player?.currentPosition ?: 0L) / 1000
+        val url = if (sec >= 3) {
+            pageUrl + (if ("?" in pageUrl) "&" else "?") + "t=$sec"
+        } else {
+            pageUrl
+        }
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, pageUrl)
+            putExtra(Intent.EXTRA_TEXT, url)
         }
         startActivity(Intent.createChooser(send, getString(R.string.share_title)))
     }
@@ -505,7 +553,7 @@ class PlayerActivity : AppCompatActivity() {
         }
         PlayerHolder.currentThumb = thumbUrl
         PlayerHolder.savePosition()
-        PlayerHolder.audioOnly = false
+        PlayerHolder.audioOnly = Prefs.podcastMode(this)
         PlayerHolder.qualityIndex = 0
         pageUrl = url
         // NOTE: resolve() recalcula el indice segun la altura preferida.

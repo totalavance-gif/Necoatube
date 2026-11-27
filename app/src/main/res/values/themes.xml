@@ -7,5 +7,25 @@
         <item name="colorPrimary">@color/yt_red</item>
         <item name="android:textColorPrimary">@color/yt_text</item>
         <item name="android:textColorSecondary">@color/yt_text2</item>
+        <item name="ytBg">@color/yt_bg</item>
+        <item name="ytSurface">@color/yt_surface</item>
+        <item name="ytChip">@color/yt_chip</item>
+        <item name="ytText">@color/yt_text</item>
+        <item name="ytText2">@color/yt_text2</item>
+        <item name="ytSubBg">@color/yt_sub_bg</item>
+        <item name="ytSubText">@color/yt_sub_text</item>
+    </style>
+
+    <style name="Theme.NexosPlay.Black" parent="Theme.NexosPlay">
+        <item name="android:windowBackground">#000000</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="ytBg">#000000</item>
+        <item name="ytSurface">#101010</item>
+        <item name="ytChip">#1C1C1C</item>
+        <item name="ytText">#F1F1F1</item>
+        <item name="ytText2">#AAAAAA</item>
+        <item name="ytSubBg">#F1F1F1</item>
+        <item name="ytSubText">#000000</item>
     </style>
 </resources>

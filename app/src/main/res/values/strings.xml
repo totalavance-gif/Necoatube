@@ -68,6 +68,16 @@
     <string name="menu_title">Opciones</string>
     <string name="menu_theme_dark">Tema: oscuro</string>
     <string name="menu_theme_light">Tema: claro</string>
+    <string name="menu_theme">Tema: %1$s</string>
+    <string name="theme_title">Tema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+    <string name="theme_black">Negro OLED</string>
+    <string name="menu_podcast_on">Modo podcast: sí</string>
+    <string name="menu_podcast_off">Modo podcast: no</string>
+    <string name="podcast_note">Desde el próximo video solo audio</string>
+    <string name="menu_silence_on">Saltar silencios: sí</string>
+    <string name="menu_silence_off">Saltar silencios: no</string>
     <string name="menu_backup">Respaldar</string>
     <string name="menu_prebuffer_on">Precarga 30s: sí</string>
     <string name="menu_prebuffer_off">Precarga 30s: no</string>

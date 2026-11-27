@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.nexos.play.R
 import com.nexos.play.playback.PlayerHolder
+import com.nexos.play.util.Prefs
 
 /** Cola del autoplay: tocar salta, mantener quita. */
 class QueueActivity : AppCompatActivity() {
@@ -17,6 +18,7 @@ class QueueActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Prefs.applyOverlay(this)
         setContentView(R.layout.activity_queue)
 
         adapter = ResultsAdapter(

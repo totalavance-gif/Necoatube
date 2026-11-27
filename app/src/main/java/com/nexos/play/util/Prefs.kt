@@ -31,20 +31,36 @@ object Prefs {
             .edit().putBoolean(KEY_SHUFFLE, value).apply()
     }
 
-    fun darkMode(ctx: Context): Boolean =
-        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
-            .getBoolean(KEY_DARK, true)
+    fun darkMode(ctx: Context): Boolean = themeMode(ctx) != 0
 
     fun setDarkMode(ctx: Context, value: Boolean) {
+        setThemeMode(ctx, if (value) 1 else 0)
+    }
+
+    /** 0 = claro, 1 = oscuro, 2 = negro OLED. Migra el booleano viejo. */
+    fun themeMode(ctx: Context): Int {
+        val p = ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        if (p.contains("theme_mode")) return p.getInt("theme_mode", 1)
+        return if (p.getBoolean(KEY_DARK, true)) 1 else 0
+    }
+
+    fun setThemeMode(ctx: Context, value: Int) {
         ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
-            .edit().putBoolean(KEY_DARK, value).apply()
+            .edit().putInt("theme_mode", value).apply()
     }
 
     fun applyTheme(ctx: Context) {
         androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
-            if (darkMode(ctx)) androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
-            else androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+            if (themeMode(ctx) == 0) androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+            else androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
         )
+    }
+
+    /** Llamar antes de setContentView en cada activity. */
+    fun applyOverlay(activity: android.app.Activity) {
+        if (themeMode(activity) == 2) {
+            activity.setTheme(com.nexos.play.R.style.Theme_NexosPlay_Black)
+        }
     }
 
     fun speed(ctx: Context): Float =
@@ -73,6 +89,24 @@ object Prefs {
     fun setQualityHeight(ctx: Context, value: Int) {
         ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .edit().putInt(KEY_QUALITY, value).apply()
+    }
+
+    fun podcastMode(ctx: Context): Boolean =
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .getBoolean("podcast_mode", false)
+
+    fun setPodcastMode(ctx: Context, value: Boolean) {
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit().putBoolean("podcast_mode", value).apply()
+    }
+
+    fun skipSilence(ctx: Context): Boolean =
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .getBoolean("skip_silence", false)
+
+    fun setSkipSilence(ctx: Context, value: Boolean) {
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit().putBoolean("skip_silence", value).apply()
     }
 
     fun positions(ctx: Context): MutableMap<String, Long> {
