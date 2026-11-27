@@ -42,10 +42,7 @@ data class Playable(
     val views: Long = -1,
     val uploadDate: String = "",
     val related: List<VideoHit> = emptyList()
-) {
-    fun hasStreams(): Boolean =
-        video != null || audio != null || videoOptions.isNotEmpty() || audioOptions.isNotEmpty()
-}
+)
 
 /** Búsqueda y resolución sin cuenta ni API key, vía NewPipeExtractor. */
 object YouTubeRepo {
@@ -71,22 +68,17 @@ object YouTubeRepo {
                 }
             }
         }.getOrNull().orEmpty()
-        val withFallback = if (hits.isNotEmpty()) hits else runCatching {
-            withContext(Dispatchers.IO) { PipedClient.trending() }
-        }.getOrNull().orEmpty()
-        val result = if (withFallback.isNotEmpty()) withFallback else search("música")
+        val result = if (hits.isNotEmpty()) hits else search("música")
         feedCache = result
         return result
     }
 
     suspend fun search(query: String): List<VideoHit> = withContext(Dispatchers.IO) {
-        runCatching {
-            retryIO {
-                val service = NewPipe.getService("YouTube")
-                val info = SearchInfo.getInfo(service, service.searchQHFactory.fromQuery(query))
-                mapHits(info.relatedItems)
-            }
-        }.getOrNull()?.takeIf { it.isNotEmpty() } ?: PipedClient.search(query)
+        retryIO {
+            val service = NewPipe.getService("YouTube")
+            val info = SearchInfo.getInfo(service, service.searchQHFactory.fromQuery(query))
+            mapHits(info.relatedItems)
+        }
     }
 
     suspend fun resolve(pageUrl: String, fresh: Boolean = false): Playable {
@@ -95,32 +87,29 @@ object YouTubeRepo {
                 if (System.currentTimeMillis() - it.at < CACHE_TTL_MS) return it.playable
             }
         }
-        val playable = runCatching {
-            withContext(Dispatchers.IO) {
-                retryIO {
-                    val service = NewPipe.getService("YouTube")
-                    val info = StreamInfo.getInfo(service, pageUrl)
-                    val muxed = muxedOptions(info.videoStreams.orEmpty())
-                    val options = muxed.ifEmpty {
-                        videoOnlyOptions(info.videoOnlyStreams.orEmpty())
-                    }
-                    val audios = audioOptions(info.audioStreams.orEmpty())
-                    Playable(
-                        title = info.name,
-                        uploader = info.uploaderName ?: "",
-                        video = options.firstOrNull(),
-                        audio = audios.firstOrNull(),
-                        videoOptions = options,
-                        audioOptions = audios,
-                        description = info.description?.content().orEmpty(),
-                        views = info.viewCount,
-                        uploadDate = info.textualUploadDate.orEmpty(),
-                        related = mapHits(info.relatedItems.orEmpty())
-                    )
+        val playable = withContext(Dispatchers.IO) {
+            retryIO {
+                val service = NewPipe.getService("YouTube")
+                val info = StreamInfo.getInfo(service, pageUrl)
+                val muxed = muxedOptions(info.videoStreams.orEmpty())
+                val options = muxed.ifEmpty {
+                    videoOnlyOptions(info.videoOnlyStreams.orEmpty())
                 }
+                val audios = audioOptions(info.audioStreams.orEmpty())
+                Playable(
+                    title = info.name,
+                    uploader = info.uploaderName ?: "",
+                    video = options.firstOrNull(),
+                    audio = audios.firstOrNull(),
+                    videoOptions = options,
+                    audioOptions = audios,
+                    description = info.description?.content().orEmpty(),
+                    views = info.viewCount,
+                    uploadDate = info.textualUploadDate.orEmpty(),
+                    related = mapHits(info.relatedItems.orEmpty())
+                )
             }
-        }.getOrNull()?.takeIf { it.hasStreams() }
-            ?: withContext(Dispatchers.IO) { PipedClient.resolve(pageUrl) }
+        }
         if (cache.size >= CACHE_MAX) cache.clear()
         cache[pageUrl] = Cached(System.currentTimeMillis(), playable)
         return playable
