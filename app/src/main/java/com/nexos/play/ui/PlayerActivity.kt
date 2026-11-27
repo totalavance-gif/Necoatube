@@ -146,6 +146,12 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun sizePlayer() {
+        // En apaisado mandan los pesos del layout-land.
+        if (resources.configuration.orientation ==
+            Configuration.ORIENTATION_LANDSCAPE
+        ) {
+            return
+        }
         val view = findViewById<PlayerView>(R.id.player_view)
         view.layoutParams = view.layoutParams.apply {
             height = resources.displayMetrics.widthPixels * 9 / 16

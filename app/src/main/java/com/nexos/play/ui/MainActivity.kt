@@ -82,7 +82,15 @@ class MainActivity : AppCompatActivity() {
                 else removeFromSection(hit.url)
             }
         )
-        list.layoutManager = LinearLayoutManager(this)
+        val cfg = resources.configuration
+        val span = when {
+            cfg.smallestScreenWidthDp >= 840 -> 3
+            cfg.smallestScreenWidthDp >= 600 -> 2
+            cfg.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE -> 2
+            else -> 1
+        }
+        list.layoutManager = if (span == 1) LinearLayoutManager(this)
+        else androidx.recyclerview.widget.GridLayoutManager(this, span)
         list.adapter = adapter
 
         findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(

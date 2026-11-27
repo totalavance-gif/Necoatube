@@ -195,5 +195,6 @@ class PlaybackService : Service() {
         } else {
             startForeground(NOTIF_ID, notif)
         }
+        com.nexos.play.ui.NexosWidget.updateAll(this)
     }
 }

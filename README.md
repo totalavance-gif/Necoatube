@@ -1,5 +1,13 @@
 # NexosPlay
 
+## Funciones (v1.10)
+
+- Gestos en video: doble toque ±10 s, mantener para 2x.
+- Saltar silencios, modo podcast, tema negro OLED, compartir con minuto.
+- Abrir links de YouTube, bloquear canales, descargar subtítulos.
+- Dormir con fundido de volumen, widget de escritorio, pantalla grande.
+
+
 [![Build APK](https://github.com/totalavance-gif/Necoatube/actions/workflows/build-apk.yml/badge.svg)](https://github.com/totalavance-gif/Necoatube/actions/workflows/build-apk.yml)
 [![Upstream](https://github.com/totalavance-gif/Necoatube/actions/workflows/upstream.yml/badge.svg)](https://github.com/totalavance-gif/Necoatube/actions/workflows/upstream.yml)
 
