@@ -77,7 +77,10 @@ class MainActivity : AppCompatActivity() {
             onPick = { hit ->
                 startActivity(PlayerActivity.intent(this, hit.url, hit.title))
             },
-            onLongPress = { hit -> removeFromSection(hit.url) }
+            onLongPress = { hit ->
+                if (section == 0 || searched) askBlockChannel(hit)
+                else removeFromSection(hit.url)
+            }
         )
         list.layoutManager = LinearLayoutManager(this)
         list.adapter = adapter
@@ -127,7 +130,7 @@ class MainActivity : AppCompatActivity() {
             status.text = getString(R.string.status_searching)
             scope.launch {
                 try {
-                    val hits = YouTubeRepo.search(q)
+                    val hits = visible(YouTubeRepo.search(q))
                     adapter.submit(hits)
                     status.text = if (hits.isEmpty()) getString(R.string.status_empty)
                     else getString(R.string.results_count, hits.size)
@@ -208,7 +211,7 @@ class MainActivity : AppCompatActivity() {
         status.text = getString(R.string.status_loading_feed)
         scope.launch {
             try {
-                val hits = YouTubeRepo.trending()
+                val hits = visible(YouTubeRepo.trending())
                 if (section == 0 && !searched) {
                     adapter.submit(hits)
                     status.text = if (hits.isEmpty()) getString(R.string.status_empty) else ""
@@ -224,6 +227,44 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun blockKey(hit: com.nexos.play.data.VideoHit): String =
+        hit.uploaderUrl.ifBlank { "name:" + hit.uploader }
+
+    private fun askBlockChannel(hit: com.nexos.play.data.VideoHit) {
+        val key = blockKey(hit)
+        if (key.isBlank() || key == "name:") return
+        AlertDialog.Builder(this)
+            .setTitle(R.string.block_title)
+            .setMessage(getString(R.string.block_msg, hit.uploader.ifBlank { "?" }))
+            .setPositiveButton(R.string.block_yes) { _, _ ->
+                Prefs.setBlocked(this, key, true)
+                Toast.makeText(this, R.string.blocked_added, Toast.LENGTH_SHORT).show()
+                if (searched) findViewById<ImageButton>(R.id.search_go).performClick()
+                else showSection(section)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showBlockedDialog() {
+        val keys = Prefs.blockedChannels(this).sorted()
+        if (keys.isEmpty()) {
+            Toast.makeText(this, R.string.blocked_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.blocked_title)
+            .setItems(keys.toTypedArray()) { _, i ->
+                Prefs.setBlocked(this, keys[i], false)
+                Toast.makeText(this, R.string.unblocked, Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun visible(hits: List<com.nexos.play.data.VideoHit>) =
+        hits.filter { !Prefs.isBlocked(this, blockKey(it)) }
 
     private fun removeFromSection(url: String) {
         when (section) {
@@ -336,7 +377,7 @@ class MainActivity : AppCompatActivity() {
         val items = arrayOf(
             getString(R.string.menu_server), themeLabel,
             getString(R.string.menu_backup), prebufferLabel,
-            podcastLabel, silenceLabel
+            podcastLabel, silenceLabel, getString(R.string.blocked_title)
         )
         AlertDialog.Builder(this)
             .setTitle(R.string.menu_title)
@@ -353,10 +394,11 @@ class MainActivity : AppCompatActivity() {
                         Prefs.setPodcastMode(this, !Prefs.podcastMode(this))
                         Toast.makeText(this, R.string.podcast_note, Toast.LENGTH_SHORT).show()
                     }
-                    else -> {
+                    5 -> {
                         Prefs.setSkipSilence(this, !Prefs.skipSilence(this))
                         com.nexos.play.playback.PlayerHolder.applySkipSilence()
                     }
+                    else -> showBlockedDialog()
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)

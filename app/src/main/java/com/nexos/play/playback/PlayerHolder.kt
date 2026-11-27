@@ -57,6 +57,7 @@ object PlayerHolder {
     private var appCtx: Context? = null
     private val sleepHandler = Handler(Looper.getMainLooper())
     private var sleepRunnable: Runnable? = null
+    private var fadeRunnable: Runnable? = null
 
     fun removeFromQueue(url: String) {
         queue = queue.filter { it.url != url }
@@ -75,22 +76,44 @@ object PlayerHolder {
         cancelSleepTimer()
         if (min <= 0) return
         sleepMinutes = min
-        val r = Runnable {
-            sleepMinutes = 0
-            savePosition()
-            player?.playWhenReady = false
-            appCtx?.let {
-                it.stopService(Intent(it, PlaybackService::class.java))
+        // Fundido de 30s antes del corte (minimo 5s de espera).
+        val totalMs = min * 60_000L
+        val fadeStart = (totalMs - 30_000L).coerceAtLeast(5_000L)
+        var volSteps = 15
+        val fadeTick = object : Runnable {
+            override fun run() {
+                val p = player
+                if (p == null || sleepMinutes <= 0) return
+                volSteps--
+                if (volSteps <= 0) {
+                    p.volume = 1f
+                    sleepMinutes = 0
+                    savePosition()
+                    p.playWhenReady = false
+                    appCtx?.let {
+                        it.stopService(Intent(it, PlaybackService::class.java))
+                    }
+                    onPlayerEvent?.invoke("Estado: en pausa")
+                    return
+                }
+                p.volume = volSteps / 15f
+                sleepHandler.postDelayed(this, 2_000)
             }
-            onPlayerEvent?.invoke("Estado: en pausa")
+        }
+        val r = Runnable {
+            fadeRunnable = fadeTick
+            sleepHandler.post(fadeTick)
         }
         sleepRunnable = r
-        sleepHandler.postDelayed(r, min * 60_000L)
+        sleepHandler.postDelayed(r, fadeStart)
     }
 
     fun cancelSleepTimer() {
         sleepRunnable?.let { sleepHandler.removeCallbacks(it) }
         sleepRunnable = null
+        fadeRunnable?.let { sleepHandler.removeCallbacks(it) }
+        fadeRunnable = null
+        player?.volume = 1f
         sleepMinutes = 0
     }
 

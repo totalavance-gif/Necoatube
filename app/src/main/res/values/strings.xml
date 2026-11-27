@@ -78,6 +78,16 @@
     <string name="podcast_note">Desde el próximo video solo audio</string>
     <string name="menu_silence_on">Saltar silencios: sí</string>
     <string name="menu_silence_off">Saltar silencios: no</string>
+    <string name="block_title">Bloquear canal</string>
+    <string name="block_msg">¿No mostrar nada de %1$s?</string>
+    <string name="block_yes">Bloquear</string>
+    <string name="blocked_added">Canal bloqueado</string>
+    <string name="blocked_title">Canales bloqueados</string>
+    <string name="blocked_empty">Sin canales bloqueados</string>
+    <string name="unblocked">Canal desbloqueado</string>
+    <string name="btn_subs">Subtítulos</string>
+    <string name="subs_title">Descargar subtítulos</string>
+    <string name="subs_none">Sin subtítulos disponibles</string>
     <string name="menu_backup">Respaldar</string>
     <string name="menu_prebuffer_on">Precarga 30s: sí</string>
     <string name="menu_prebuffer_off">Precarga 30s: no</string>

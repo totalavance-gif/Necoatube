@@ -11,6 +11,7 @@ object HitJson {
         .put("duration", h.durationSec)
         .put("views", h.views)
         .put("thumb", h.thumbUrl ?: "")
+        .put("uploaderUrl", h.uploaderUrl)
 
     fun fromJson(o: JSONObject): VideoHit = VideoHit(
         title = o.optString("title"),
@@ -18,6 +19,7 @@ object HitJson {
         uploader = o.optString("uploader"),
         durationSec = o.optLong("duration"),
         views = o.optLong("views", -1),
-        thumbUrl = o.optString("thumb").ifBlank { null }
+        thumbUrl = o.optString("thumb").ifBlank { null },
+        uploaderUrl = o.optString("uploaderUrl")
     )
 }

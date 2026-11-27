@@ -109,6 +109,22 @@ object Prefs {
             .edit().putBoolean("skip_silence", value).apply()
     }
 
+    fun blockedChannels(ctx: Context): MutableSet<String> =
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .getStringSet("blocked_channels", emptySet())
+            ?.toMutableSet() ?: mutableSetOf()
+
+    fun isBlocked(ctx: Context, key: String): Boolean =
+        key.isNotBlank() && blockedChannels(ctx).contains(key)
+
+    fun setBlocked(ctx: Context, key: String, blocked: Boolean) {
+        if (key.isBlank()) return
+        val set = blockedChannels(ctx)
+        if (blocked) set.add(key) else set.remove(key)
+        ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+            .edit().putStringSet("blocked_channels", set).apply()
+    }
+
     fun positions(ctx: Context): MutableMap<String, Long> {
         val raw = ctx.getSharedPreferences(FILE, Context.MODE_PRIVATE)
             .getString(KEY_POSITIONS, "").orEmpty()

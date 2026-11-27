@@ -103,6 +103,7 @@ class PlayerActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.btn_dl_audio).setOnClickListener { download(video = false) }
         findViewById<MaterialButton>(R.id.btn_share).setOnClickListener { share() }
         findViewById<MaterialButton>(R.id.btn_backend).setOnClickListener { viaBackend() }
+        findViewById<MaterialButton>(R.id.btn_subs).setOnClickListener { downloadSubs() }
 
         if (Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
@@ -122,6 +123,12 @@ class PlayerActivity : AppCompatActivity() {
     private fun urlFromIntent(intent: Intent): Pair<String, String> {
         var url = intent.getStringExtra(EXTRA_URL).orEmpty()
         var title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
+        if (intent.action == Intent.ACTION_VIEW) {
+            intent.dataString?.takeIf { it.isNotBlank() }?.let {
+                url = it
+                title = it
+            }
+        }
         if (intent.action == Intent.ACTION_SEND) {
             val shared = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
             val found = Regex("https?://\\S+").find(shared)?.value.orEmpty()
@@ -286,7 +293,11 @@ class PlayerActivity : AppCompatActivity() {
             p.uploader.trim().firstOrNull()?.uppercase() ?: "?"
         findViewById<TextView>(R.id.channel_meta).text = metaLine(p)
         findViewById<TextView>(R.id.video_desc).text = p.description.ifBlank { "—" }
-        upNext.submit(p.related)
+        upNext.submit(
+            p.related.filter {
+                !Prefs.isBlocked(this, it.uploaderUrl.ifBlank { "name:" + it.uploader })
+            }
+        )
         PlayerHolder.queue = p.related
         updateQualityButton()
         updateFavButton()
@@ -313,7 +324,10 @@ class PlayerActivity : AppCompatActivity() {
         PlaybackService.start(this)
         History.record(
             this,
-            VideoHit(p.title, pageUrl, p.uploader, 0, p.views, PlayerHolder.currentThumb)
+            VideoHit(
+                p.title, pageUrl, p.uploader, 0, p.views, PlayerHolder.currentThumb,
+                p.uploaderUrl
+            )
         )
         findViewById<MaterialButton>(R.id.btn_audio).text =
             getString(if (PlayerHolder.audioOnly) R.string.audio_on else R.string.audio_off)
@@ -401,7 +415,10 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun currentHit(): VideoHit? {
         val p = PlayerHolder.playable ?: return null
-        return VideoHit(p.title, pageUrl, p.uploader, 0, p.views, PlayerHolder.currentThumb)
+        return VideoHit(
+            p.title, pageUrl, p.uploader, 0, p.views, PlayerHolder.currentThumb,
+            p.uploaderUrl
+        )
     }
 
     private fun toggleFav() {
@@ -584,6 +601,27 @@ class PlayerActivity : AppCompatActivity() {
         val name = Downloads.fileName(p.title, choice.label, choice.ext)
         Downloads.enqueue(this, choice.url, name)
         Toast.makeText(this, R.string.toast_download_started, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun downloadSubs() {
+        val p = PlayerHolder.playable
+        val caps = p?.captions.orEmpty()
+        if (p == null || caps.isEmpty()) {
+            Toast.makeText(this, R.string.subs_none, Toast.LENGTH_SHORT).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.subs_title)
+            .setItems(caps.map { it.label }.toTypedArray()) { _, i ->
+                val c = caps[i]
+                val name = Downloads.fileName(
+                    p.title + " [" + c.label + "]", "", c.ext
+                )
+                Downloads.enqueue(this, c.url, name)
+                Toast.makeText(this, R.string.toast_download_started, Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun viaBackend() {
