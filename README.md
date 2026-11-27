@@ -8,6 +8,26 @@ Monitor del extractor: [STATUS.md](STATUS.md).
 App Android (Kotlin) + servidor opcional (Python): busca y reproduce YouTube sin
 cuenta y sin anuncios, descarga video/audio en el equipo o vía servidor propio.
 
+## Funciones (v1.9.4)
+
+- Segundo motor: API de Piped como relevo si NewPipe falla.
+
+## Funciones (v1.9.3)
+
+- Precarga 30 s antes de arrancar (ajuste en ⋮, activado).
+
+## Funciones (v1.9.2)
+
+- Anti-buffering: baja calidad solo si se atasca, más colchón, red OkHttp.
+
+## Funciones (v1.9.1)
+
+- Inicio rápido: calidad inicial 720p y recuerda tu elección.
+
+## Funciones (v1.9)
+
+- Interfaz estilo YouTube: nav inferior, tarjetas con avatar, suscribirse.
+
 ## Funciones (v1.8)
 
 - Escalera de fallos: si un stream falla prueba otra calidad, luego
