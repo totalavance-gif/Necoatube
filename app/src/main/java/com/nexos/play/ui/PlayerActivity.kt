@@ -279,9 +279,13 @@ class PlayerActivity : AppCompatActivity() {
                 prefetchNext()
             } catch (e: Exception) {
                 if (want == pageUrl) {
-                    status.text = getString(
-                        R.string.status_error, e.message ?: e.javaClass.simpleName
-                    )
+                    if (Prefs.backendUrl(this@PlayerActivity).isNotBlank()) {
+                        playViaBackend()
+                    } else {
+                        status.text = getString(
+                            R.string.status_error, e.message ?: e.javaClass.simpleName
+                        )
+                    }
                 }
             } finally {
                 if (resolving == want) resolving = null
@@ -628,6 +632,52 @@ class PlayerActivity : AppCompatActivity() {
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
+    }
+
+    /** Relevo automatico: si el extractor falla (edad, bloqueo),
+     *  reproduce via el servidor yt-dlp si esta configurado. */
+    private fun playViaBackend() {
+        val base = Prefs.backendUrl(this)
+        if (base.isBlank()) return
+        val want = pageUrl
+        val status = findViewById<TextView>(R.id.status)
+        val progress = findViewById<ProgressBar>(R.id.progress)
+        progress.visibility = View.VISIBLE
+        status.text = getString(R.string.via_server_play)
+        scope.launch {
+            try {
+                val info = withContext(Dispatchers.IO) {
+                    BackendClient.fetchInfo(base, want)
+                }
+                if (want != pageUrl) return@launch
+                val video = info.video?.let { StreamChoice(it.url, it.label, it.ext) }
+                val audio = info.audio?.let { StreamChoice(it.url, it.label, it.ext) }
+                if (video == null && audio == null) {
+                    throw IllegalStateException(getString(R.string.toast_no_streams))
+                }
+                val p = Playable(
+                    title = info.title.ifBlank { want },
+                    uploader = info.uploader,
+                    video = video,
+                    audio = audio,
+                    videoOptions = listOfNotNull(video),
+                    audioOptions = listOfNotNull(audio)
+                )
+                PlayerHolder.playable = p
+                PlayerHolder.pageUrl = want
+                PlayerHolder.qualityIndex = 0
+                bindInfo(p)
+                playCurrent()
+            } catch (e: Exception) {
+                if (want == pageUrl) {
+                    status.text = getString(
+                        R.string.status_error, e.message ?: e.javaClass.simpleName
+                    )
+                }
+            } finally {
+                if (want == pageUrl) progress.visibility = View.GONE
+            }
+        }
     }
 
     private fun viaBackend() {
